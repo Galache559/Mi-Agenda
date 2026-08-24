@@ -56,6 +56,7 @@ label{font-size:.75rem;color:var(--sub)}
 .repeatbox input{width:20px;height:20px;margin:0}
 </style>
 </head>
+
 <body>
 
 <header><h1>📅 MI AGENDA v5</h1></header>
@@ -67,7 +68,9 @@ label{font-size:.75rem;color:var(--sub)}
 <div id="notice" class="notice"></div>
 
 <div class="card">
-<div class="todaybox"><div class="bigday" id="todayTitle"></div></div>
+<div class="todaybox">
+<div class="bigday" id="todayTitle"></div>
+</div>
 <div id="todayList"></div>
 </div>
 
@@ -80,10 +83,13 @@ label{font-size:.75rem;color:var(--sub)}
 
 <div class="card">
 <h2>🔔 Avisos</h2>
-<p id="notificationStatus" style="color:var(--sub);font-size:.75rem;line-height:1.4;margin-bottom:8px">
+<p id="notificationStatus"
+style="color:var(--sub);font-size:.75rem;line-height:1.4;margin-bottom:8px">
 Activa los avisos para recibir la alerta de las 14:00.
 </p>
-<button class="btn out" id="notificationBtn">🔔 Activar avisos</button>
+<button class="btn out" id="notificationBtn">
+🔔 Activar avisos
+</button>
 </div>
 
 <div class="card">
@@ -93,13 +99,20 @@ Activa los avisos para recibir la alerta de las 14:00.
 
 </section>
 
+
 <section id="agenda" class="tab">
 
 <div class="card">
+
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+
 <button class="btn out sm" id="prev">❮</button>
-<h2 id="monthTitle" style="margin:0;text-align:center;flex:1"></h2>
+
+<h2 id="monthTitle"
+style="margin:0;text-align:center;flex:1"></h2>
+
 <button class="btn out sm" id="next">❯</button>
+
 </div>
 
 <button class="btn out" id="todayBtn" style="margin:8px 0 10px">
@@ -107,78 +120,152 @@ Activa los avisos para recibir la alerta de las 14:00.
 </button>
 
 <div class="calendar" id="calendar"></div>
+
 </div>
 
+
 <div class="card">
+
 <h2 id="dayTitle"></h2>
+
 <div id="dayList"></div>
-<button class="btn" id="dayNew">＋ Añadir a este día</button>
+
+<button class="btn" id="dayNew">
+＋ Añadir a este día
+</button>
+
 </div>
 
 </section>
+
 
 <section id="ajustes" class="tab">
 
 <div class="card">
+
 <h2>⚙️ Ajustes</h2>
-<button class="btn out" id="export">💾 Exportar agenda</button>
+
+<button class="btn out" id="export">
+💾 Exportar agenda
+</button>
+
 <br><br>
-<button class="btn out" id="importBtn">📥 Importar agenda</button>
+
+<button class="btn out" id="importBtn">
+📥 Importar agenda
+</button>
+
 <input id="file" type="file" accept=".json" style="display:none">
+
 </div>
 
+
 <div class="card">
+
 <h2>ℹ️ Mi Agenda</h2>
+
 <p style="color:var(--sub);font-size:.78rem;line-height:1.5">
 Agenda personal sencilla. Los datos se guardan automáticamente en este dispositivo.
 </p>
+
 </div>
 
 </section>
 
 </div>
 
+
 <nav>
-<button id="navHoy" class="active">🏠<br>Hoy</button>
-<button id="navAgenda">📅<br>Agenda</button>
-<button id="navAjustes">⚙️<br>Ajustes</button>
+
+<button id="navHoy" class="active">
+🏠<br>Hoy
+</button>
+
+<button id="navAgenda">
+📅<br>Agenda
+</button>
+
+<button id="navAjustes">
+⚙️<br>Ajustes
+</button>
+
 </nav>
+
 
 <script>
 "use strict";
 
-const KEY="mi_agenda_v5";
-let events=[];
-try{events=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){events=[]}
 
-let view=new Date(),selected=today(),editId=null;
+const KEY="mi_agenda_v5";
+
+let events=[];
+
+try{
+ events=JSON.parse(localStorage.getItem(KEY)||"[]");
+}catch(e){
+ events=[];
+}
+
+
+let view=new Date(),
+selected=today(),
+editId=null;
+
 
 const $=id=>document.getElementById(id);
 
+
 const esc=s=>String(s??"").replace(
  /[&<>"']/g,
- m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])
+ m=>({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+ }[m])
 );
 
+
 function today(){
+
  let d=new Date();
- return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
+
+ return d.getFullYear()+"-"+
+  String(d.getMonth()+1).padStart(2,"0")+"-"+
+  String(d.getDate()).padStart(2,"0");
 }
+
 
 function addDays(dateString,days){
+
  let d=new Date(dateString+"T12:00:00");
+
  d.setDate(d.getDate()+days);
- return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
+
+ return d.getFullYear()+"-"+
+  String(d.getMonth()+1).padStart(2,"0")+"-"+
+  String(d.getDate()).padStart(2,"0");
 }
 
-function save(){localStorage.setItem(KEY,JSON.stringify(events))}
+
+function save(){
+ localStorage.setItem(KEY,JSON.stringify(events));
+}
+
 
 function fmt(s){
+
  return new Date(s+"T12:00:00").toLocaleDateString(
   "es-ES",
-  {day:"2-digit",month:"2-digit",year:"numeric"}
- )
+  {
+   day:"2-digit",
+   month:"2-digit",
+   year:"numeric"
+  }
+ );
 }
+
 
 const names={
  cita:"🔵 Cita",
@@ -187,7 +274,9 @@ const names={
  viaje:"✈️ Viaje"
 };
 
+
 function showTab(n){
+
  ["hoy","agenda","ajustes"].forEach(x=>
   $(x).classList.toggle("active",x===n)
  );
@@ -201,27 +290,41 @@ function showTab(n){
 
  if(n==="hoy"){
   renderToday();
-  renderNext()
+  renderNext();
  }
 
- if(n==="agenda")renderCalendar()
+ if(n==="agenda"){
+  renderCalendar();
+ }
 }
+
 
 $("navHoy").onclick=()=>showTab("hoy");
 $("navAgenda").onclick=()=>showTab("agenda");
 $("navAjustes").onclick=()=>showTab("ajustes");
 
+
+/* =========================
+   EVENTOS Y CUMPLEAÑOS
+========================= */
+
 function allEvents(){
 
- let a=[...events],y=new Date().getFullYear();
+ let a=[...events];
+ let y=new Date().getFullYear();
 
- events.filter(e=>e.repeat&&e.type==="cumple").forEach(e=>{
+ events
+ .filter(e=>e.repeat&&e.type==="cumple")
+ .forEach(e=>{
+
+  let originalYear=
+   new Date(e.date+"T12:00:00").getFullYear();
 
   for(let i=-2;i<5;i++){
 
    let yy=y+i;
 
-   if(yy===new Date(e.date+"T12:00:00").getFullYear())continue;
+   if(yy===originalYear)continue;
 
    a.push({
     ...e,
@@ -231,41 +334,74 @@ function allEvents(){
   }
  });
 
- return a
+ return a;
 }
 
+
 function icon(type){
+
  return type==="cita"?"🔵":
         type==="cumple"?"🎂":
-        type==="medico"?"🩺":"✈️"
+        type==="medico"?"🩺":
+        "✈️";
 }
+
 
 function card(e){
 
  return '<div class="event '+e.type+'" data-id="'+esc(e.id)+'">'+
- '<div class="etype">'+names[e.type]+(e.repeat?" · ANUAL":"")+'</div>'+
- '<div class="edate">'+
- (e.time?e.time+" · ":"")+fmt(e.date)+
+
+ '<div class="etype">'+
+ names[e.type]+
+ (e.repeat?" · ANUAL":"")+
  '</div>'+
- '<div class="etext">'+esc(e.text)+'</div>'+
+
+ '<div class="edate">'+
+ (e.time?e.time+" · ":"")+
+ fmt(e.date)+
+ '</div>'+
+
+ '<div class="etext">'+
+ esc(e.text)+
+ '</div>'+
+
  (e.note?
   '<div style="font-size:.72rem;color:var(--sub)">'+
   esc(e.note)+
-  '</div>':'')+
+  '</div>':
+  '')+
+
  '<div class="actions">'+
- '<button class="editBtn" data-id="'+esc(e.id)+'">✏️ Editar</button>'+
- '<button class="deleteBtn" data-id="'+esc(e.id)+'">🗑️ Borrar</button>'+
- '</div></div>'
+
+ '<button class="editBtn" data-id="'+esc(e.id)+'">'+
+ '✏️ Editar'+
+ '</button>'+
+
+ '<button class="deleteBtn" data-id="'+esc(e.id)+'">'+
+ '🗑️ Borrar'+
+ '</button>'+
+
+ '</div></div>';
 }
+
+
+/* =========================
+   HOY
+========================= */
 
 function renderToday(){
 
  let d=new Date();
 
- $("todayTitle").textContent=d.toLocaleDateString(
-  "es-ES",
-  {weekday:"long",day:"numeric",month:"long"}
- );
+ $("todayTitle").textContent=
+  d.toLocaleDateString(
+   "es-ES",
+   {
+    weekday:"long",
+    day:"numeric",
+    month:"long"
+   }
+  );
 
  let a=allEvents()
   .filter(e=>e.date===today())
@@ -275,10 +411,18 @@ function renderToday(){
 
  $("todayList").innerHTML=a.length?
   a.map(card).join(""):
-  '<div class="empty">No tienes nada previsto para hoy. 👍</div>';
 
- updateNotificationStatus()
+  '<div class="empty">'+
+  'No tienes nada previsto para hoy. 👍'+
+  '</div>';
+
+ updateNotificationStatus();
 }
+
+
+/* =========================
+   PRÓXIMOS AVISOS
+========================= */
 
 function renderNext(){
 
@@ -287,7 +431,10 @@ function renderNext(){
  pasado=addDays(t,2);
 
  let a=allEvents()
-  .filter(e=>e.date===manana||e.date===pasado)
+  .filter(e=>
+   e.date===manana||
+   e.date===pasado
+  )
   .sort((x,y)=>
    (x.date+(x.time||"")).localeCompare(
     y.date+(y.time||"")
@@ -297,9 +444,11 @@ function renderNext(){
  if(!a.length){
 
   $("nextList").innerHTML=
-   '<div class="empty">No hay avisos para mañana ni pasado mañana. 👍</div>';
+   '<div class="empty">'+
+   'No hay avisos para mañana ni pasado mañana. 👍'+
+   '</div>';
 
-  return
+  return;
  }
 
  let html="";
@@ -317,28 +466,49 @@ function renderNext(){
    " — "+
    d.toLocaleDateString(
     "es-ES",
-    {weekday:"long",day:"numeric",month:"long"}
+    {
+     weekday:"long",
+     day:"numeric",
+     month:"long"
+    }
    );
 
-  html+='<div class="nextday">'+titulo+'</div>';
+  html+=
+   '<div class="nextday">'+
+   titulo+
+   '</div>';
 
   lista.forEach(e=>{
 
    html+=
     '<div class="nextitem">'+
-    '<div>'+names[e.type]+
+
+    '<div>'+
+    names[e.type]+
     (e.repeat?" · ANUAL":"")+
     '</div>'+
-    '<div class="nexttext">'+esc(e.text)+'</div>'+
+
+    '<div class="nexttext">'+
+    esc(e.text)+
+    '</div>'+
+
     (e.time?
-     '<div class="nexttime">⏰ '+esc(e.time)+'</div>':
+     '<div class="nexttime">⏰ '+
+     esc(e.time)+
+     '</div>':
      '')+
+
     '</div>';
   });
  });
 
- $("nextList").innerHTML=html
+ $("nextList").innerHTML=html;
 }
+
+
+/* =========================
+   CALENDARIO
+========================= */
 
 function renderCalendar(){
 
@@ -351,26 +521,33 @@ function renderCalendar(){
  $("monthTitle").textContent=
   view.toLocaleDateString(
    "es-ES",
-   {month:"long",year:"numeric"}
+   {
+    month:"long",
+    year:"numeric"
+   }
   );
 
  let h=
   ["Lu","Ma","Mi","Ju","Vi","Sá","Do"]
-  .map(x=>'<div class="week">'+x+"</div>")
+  .map(x=>
+   '<div class="week">'+x+'</div>'
+  )
   .join("");
 
- for(let i=0;i<first;i++)h+="<div></div>";
+ for(let i=0;i<first;i++){
+  h+="<div></div>";
+ }
 
  for(let d=1;d<=days;d++){
 
   let z=
    y+"-"+
    String(m+1).padStart(2,"0")+"-"+
-   String(d).padStart(2,"0"),
+   String(d).padStart(2,"0");
 
-  es=a.filter(e=>e.date===z),
+  let es=a.filter(e=>e.date===z);
 
-  dots=es.length?
+  let dots=es.length?
    '<div class="dot">'+
    es.map(e=>icon(e.type)).join("")+
    '</div>':
@@ -381,21 +558,26 @@ function renderCalendar(){
    (z===today()?"today ":"")+
    (z===selected?"sel":"")+
    '" data-date="'+z+'">'+
-   d+dots+
-   '</div>'
+   d+
+   dots+
+   '</div>';
  }
 
  $("calendar").innerHTML=h;
 
  document.querySelectorAll(".cal[data-date]").forEach(x=>
+
   x.onclick=()=>{
+
    selected=x.dataset.date;
-   renderCalendar()
+
+   renderCalendar();
   }
  );
 
- renderDay()
+ renderDay();
 }
+
 
 function renderDay(){
 
@@ -420,27 +602,53 @@ function renderDay(){
 
  $("dayList").innerHTML=a.length?
   a.map(card).join(""):
-  '<div class="empty">No hay anotaciones para este día.</div>'
+
+  '<div class="empty">'+
+  'No hay anotaciones para este día.'+
+  '</div>';
 }
 
+
+/* =========================
+   NAVEGACIÓN
+========================= */
+
 $("prev").onclick=()=>{
+
  view.setMonth(view.getMonth()-1);
- renderCalendar()
+
+ renderCalendar();
 };
+
 
 $("next").onclick=()=>{
+
  view.setMonth(view.getMonth()+1);
- renderCalendar()
+
+ renderCalendar();
 };
+
 
 $("todayBtn").onclick=()=>{
+
  selected=today();
  view=new Date();
- renderCalendar()
+
+ renderCalendar();
 };
 
-$("newBtn").onclick=()=>openForm(today(),null);
-$("dayNew").onclick=()=>openForm(selected,null);
+
+$("newBtn").onclick=()=>
+ openForm(today(),null);
+
+
+$("dayNew").onclick=()=>
+ openForm(selected,null);
+
+
+/* =========================
+   EDITAR / BORRAR
+========================= */
 
 document.addEventListener("click",function(e){
 
@@ -448,8 +656,11 @@ document.addEventListener("click",function(e){
 
  if(!b)return;
 
- let id=b.getAttribute("data-id"),
- x=events.find(a=>String(a.id)===String(id));
+ let id=b.getAttribute("data-id");
+
+ let x=events.find(a=>
+  String(a.id)===String(id)
+ );
 
  if(!x){
 
@@ -458,13 +669,14 @@ document.addEventListener("click",function(e){
    "Debes modificar el cumpleaños original."
   );
 
-  return
+  return;
  }
 
  if(b.classList.contains("editBtn")){
 
   openForm(x.date,x);
-  return
+
+  return;
  }
 
  if(
@@ -472,17 +684,22 @@ document.addEventListener("click",function(e){
   confirm("¿Borrar esta anotación?")
  ){
 
-  events=events.filter(
-   a=>String(a.id)!==String(id)
+  events=events.filter(a=>
+   String(a.id)!==String(id)
   );
 
   save();
 
   renderToday();
   renderNext();
-  renderCalendar()
+  renderCalendar();
  }
 });
+
+
+/* =========================
+   FORMULARIO
+========================= */
 
 function openForm(date,e){
 
@@ -496,44 +713,65 @@ function openForm(date,e){
  '<div class="modalbox">'+
 
  '<h2>'+
- (editId?"✏️ Editar anotación":"➕ Nueva anotación")+
+ (editId?
+  "✏️ Editar anotación":
+  "➕ Nueva anotación")+
  '</h2>'+
 
  '<label>Tipo</label>'+
+
  '<select id="ft">'+
+
  '<option value="cita">🔵 Cita</option>'+
  '<option value="cumple">🎂 Cumpleaños</option>'+
  '<option value="medico">🩺 Médico</option>'+
  '<option value="viaje">✈️ Viaje</option>'+
+
  '</select>'+
 
  '<div class="formrow">'+
- '<div><label>Fecha</label>'+
- '<input id="fd" type="date" value="'+date+'"></div>'+
- '<div><label>Hora</label>'+
+
+ '<div>'+
+ '<label>Fecha</label>'+
+ '<input id="fd" type="date" value="'+date+'">'+
+ '</div>'+
+
+ '<div>'+
+ '<label>Hora</label>'+
  '<input id="fh" type="time" value="'+
  (e&&e.time||"")+
- '"></div></div>'+
+ '">'+
+ '</div>'+
+
+ '</div>'+
 
  '<label>Descripción</label>'+
- '<input id="fx" placeholder="¿Qué tienes previsto?" value="'+
- esc(e&&e.text||"")+
- '">' +
+
+ '<input id="fx" '+
+ 'placeholder="¿Qué tienes previsto?" '+
+ 'value="'+esc(e&&e.text||"")+'">'+
 
  '<label>Notas</label>'+
- '<textarea id="fn" placeholder="Detalles...">'+
+
+ '<textarea id="fn" '+
+ 'placeholder="Detalles...">'+
  esc(e&&e.note||"")+
  '</textarea>'+
 
  '<label id="rl" class="repeatbox" style="display:none">'+
+
  '<input id="fr" type="checkbox" '+
  (e&&e.repeat?"checked":"")+
  '>'+
+
  ' Repetir cada año</label>'+
 
  '<div style="display:flex;gap:7px">'+
+
  '<button class="btn" id="fs">Guardar</button>'+
+
  '<button class="btn out" id="fc">Cancelar</button>'+
+
  '</div>'+
 
  '</div>';
@@ -542,16 +780,22 @@ function openForm(date,e){
 
  $("ft").value=e&&e.type||"cita";
 
+
  function rep(){
 
   $("rl").style.display=
-   $("ft").value==="cumple"?"flex":"none"
+   $("ft").value==="cumple"?
+   "flex":
+   "none";
  }
 
  $("ft").onchange=rep;
+
  rep();
 
+
  $("fc").onclick=()=>m.remove();
+
 
  $("fs").onclick=()=>{
 
@@ -560,8 +804,10 @@ function openForm(date,e){
   if(!text){
 
    alert("Escribe una descripción.");
+
    $("fx").focus();
-   return
+
+   return;
   }
 
   let fecha=$("fd").value;
@@ -569,69 +815,104 @@ function openForm(date,e){
   if(!fecha){
 
    alert("Selecciona una fecha.");
+
    $("fd").focus();
-   return
+
+   return;
   }
 
   let x={
+
    id:editId||Date.now(),
+
    type:$("ft").value,
+
    date:fecha,
+
    time:$("fh").value,
+
    text:text,
+
    note:$("fn").value.trim(),
+
    repeat:
     $("ft").value==="cumple"&&
     $("fr").checked
   };
 
+
   if(editId){
 
    events=events.map(a=>
-    String(a.id)===String(editId)?x:a
+    String(a.id)===String(editId)?
+    x:
+    a
    );
 
   }else{
 
-   events.push(x)
+   events.push(x);
   }
+
 
   save();
 
   selected=x.date;
-  view=new Date(x.date+"T12:00:00");
+
+  view=new Date(
+   x.date+"T12:00:00"
+  );
 
   m.remove();
 
   renderToday();
   renderNext();
   renderCalendar();
-  checkAlerts()
- }
+
+  checkAlerts();
+ };
 }
+
+
+/* =========================
+   EXPORTAR
+========================= */
 
 $("export").onclick=()=>{
 
  let b=new Blob(
-  [JSON.stringify(
-   {version:5,events},
-   null,
-   2
-  )],
+  [
+   JSON.stringify(
+    {
+     version:5,
+     events
+    },
+    null,
+    2
+   )
+  ],
   {type:"application/json"}
  );
 
  let a=document.createElement("a");
 
  a.href=URL.createObjectURL(b);
- a.download="mi_agenda_"+today()+".json";
+
+ a.download=
+  "mi_agenda_"+today()+".json";
+
  a.click();
 
  setTimeout(
   ()=>URL.revokeObjectURL(a.href),
   1000
- )
+ );
 };
+
+
+/* =========================
+   IMPORTAR
+========================= */
 
 $("importBtn").onclick=()=>{
 
@@ -645,9 +926,10 @@ $("importBtn").onclick=()=>{
   )
  ){
 
-  $("file").click()
+  $("file").click();
  }
 };
+
 
 $("file").onchange=e=>{
 
@@ -663,9 +945,11 @@ $("file").onchange=e=>{
 
    let d=JSON.parse(r.result);
 
-   if(!Array.isArray(d.events))throw 0;
+   if(!Array.isArray(d.events))
+    throw 0;
 
    events=d.events;
+
    save();
 
    selected=today();
@@ -675,17 +959,19 @@ $("file").onchange=e=>{
    renderNext();
    renderCalendar();
 
-   alert("Agenda importada correctamente.");
+   alert(
+    "Agenda importada correctamente."
+   );
 
   }catch(x){
 
-   alert("Archivo no válido.")
+   alert("Archivo no válido.");
   }
 
-  $("file").value=""
+  $("file").value="";
  };
 
- r.readAsText(f)
+ r.readAsText(f);
 };
 
 
@@ -694,8 +980,10 @@ $("file").onchange=e=>{
 ========================= */
 
 function alertKey(){
- return "agenda_aviso_"+today()
+
+ return "agenda_aviso_"+today();
 }
+
 
 function tomorrowEvents(){
 
@@ -705,27 +993,33 @@ function tomorrowEvents(){
   .filter(e=>e.date===manana)
   .sort((a,b)=>
    (a.time||"").localeCompare(b.time||"")
-  )
+  );
 }
+
 
 function showAlertMessage(lista){
 
  if(!lista.length)return;
 
  let texto=
-  "🔔 AVISO\n\nMañana tienes:\n\n";
+  "🔔 AVISO\n\n"+
+  "Mañana tienes:\n\n";
 
  lista.forEach(e=>{
+
   texto+=
    (e.time?
     "⏰ "+e.time+" — ":
     "• ")+
-   e.text+"\n";
+   e.text+
+   "\n";
  });
+
 
  $("notice").innerHTML=
   "<strong>🔔 AVISO</strong><br><br>"+
   "Mañana tienes:<br>"+
+
   lista.map(e=>
    (e.time?
     "⏰ "+esc(e.time)+" — ":
@@ -733,10 +1027,12 @@ function showAlertMessage(lista){
    esc(e.text)
   ).join("<br>");
 
+
  $("notice").style.display="block";
 
- alert(texto)
+ alert(texto);
 }
+
 
 function playAlertSound(){
 
@@ -751,14 +1047,21 @@ function playAlertSound(){
   let ctx=new AudioContext(),
   now=ctx.currentTime;
 
+
   for(let i=0;i<3;i++){
 
    let osc=ctx.createOscillator(),
    gain=ctx.createGain();
 
    osc.type="sine";
+
    osc.frequency.value=
-    i===0?880:i===1?1100:880;
+    i===0?
+    880:
+    i===1?
+    1100:
+    880;
+
 
    gain.gain.setValueAtTime(
     .0001,
@@ -775,15 +1078,25 @@ function playAlertSound(){
     now+i*.35+.28
    );
 
+
    osc.connect(gain);
+
    gain.connect(ctx.destination);
 
    osc.start(now+i*.35);
-   osc.stop(now+i*.35+.3)
+
+   osc.stop(
+    now+i*.35+.3
+   );
   }
 
  }catch(e){}
 }
+
+
+/* =========================
+   NOTIFICACIONES
+========================= */
 
 function updateNotificationStatus(){
 
@@ -793,8 +1106,10 @@ function updateNotificationStatus(){
    "Este navegador no permite notificaciones.";
 
   $("notificationBtn").style.display="none";
-  return
+
+  return;
  }
+
 
  if(Notification.permission==="granted"){
 
@@ -822,6 +1137,7 @@ function updateNotificationStatus(){
  }
 }
 
+
 $("notificationBtn").onclick=async()=>{
 
  if(!("Notification" in window)){
@@ -830,8 +1146,9 @@ $("notificationBtn").onclick=async()=>{
    "Este navegador no permite notificaciones."
   );
 
-  return
+  return;
  }
+
 
  try{
 
@@ -839,6 +1156,7 @@ $("notificationBtn").onclick=async()=>{
    await Notification.requestPermission();
 
   updateNotificationStatus();
+
 
   if(permission==="granted"){
 
@@ -861,9 +1179,14 @@ $("notificationBtn").onclick=async()=>{
 
   alert(
    "No se ha podido activar el permiso de notificaciones."
-  )
+  );
  }
 };
+
+
+/* =========================
+   COMPROBAR AVISOS
+========================= */
 
 function checkAlerts(){
 
@@ -871,20 +1194,30 @@ function checkAlerts(){
  hora=ahora.getHours(),
  minuto=ahora.getMinutes();
 
+
  if(hora!==14||minuto>5)return;
+
 
  let lista=tomorrowEvents();
 
+
  if(!lista.length)return;
+
 
  let key=alertKey();
 
- if(localStorage.getItem(key)==="1")return;
+
+ if(localStorage.getItem(key)==="1")
+  return;
+
 
  localStorage.setItem(key,"1");
 
+
  playAlertSound();
+
  showAlertMessage(lista);
+
 
  if(
   "Notification" in window&&
@@ -910,15 +1243,27 @@ function checkAlerts(){
  }
 }
 
-setInterval(checkAlerts,30000);
+
+/* =========================
+   ARRANQUE
+========================= */
+
+setInterval(
+ checkAlerts,
+ 30000
+);
 
 checkAlerts();
 
 renderToday();
+
 renderNext();
+
 renderCalendar();
+
 updateNotificationStatus();
 
 </script>
+
 </body>
 </html>
