@@ -10,7 +10,8 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);padding-bottom:75px}
 header{background:var(--card);padding:13px;text-align:center;border-bottom:1px solid var(--bor)}
-h1{font-size:1.2rem;color:var(--a)}h2{font-size:1rem;color:var(--a);margin-bottom:10px}
+h1{font-size:1.2rem;color:var(--a)}
+h2{font-size:1rem;color:var(--a);margin-bottom:10px}
 .container{max-width:650px;margin:auto;padding:10px}
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);display:flex;border-top:1px solid var(--bor);padding:7px 0;z-index:20}
 nav button{width:33%;background:none;border:0;color:var(--sub);font-size:.72rem}
@@ -21,19 +22,24 @@ nav button.active{color:var(--a);font-weight:bold}
 .out{background:transparent;color:#fff;border:1px solid var(--bor)}
 .sm{width:auto;padding:6px 10px;font-size:.75rem}
 input,select,textarea{width:100%;background:var(--inp);color:#fff;border:1px solid var(--bor);border-radius:6px;padding:9px;margin:5px 0 9px;font-size:.9rem}
-textarea{min-height:70px}label{font-size:.72rem;color:var(--sub)}
+textarea{min-height:70px}
+label{font-size:.72rem;color:var(--sub)}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
 .week{font-size:.65rem;color:var(--sub);padding:5px}
 .cal{height:48px;background:var(--item);border-radius:6px;padding:7px 2px;position:relative;cursor:pointer;font-size:.8rem}
-.cal.today{border:1px solid var(--a)}.cal.sel{background:var(--a);color:#000;font-weight:bold}
+.cal.today{border:1px solid var(--a)}
+.cal.sel{background:var(--a);color:#000;font-weight:bold}
 .dot{position:absolute;bottom:3px;left:0;right:0;font-size:.55rem}
 .event{background:var(--item);border-left:4px solid var(--a);border-radius:7px;padding:9px;margin-bottom:7px}
 .cita{border-color:var(--blue)}.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.cumple{border-color:var(--pink)}
-.etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}.edate{font-size:.7rem;color:var(--sub)}
-.etext{font-size:.9rem;margin:3px 0}.empty{text-align:center;color:var(--sub);padding:18px;font-size:.8rem}
+.etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}
+.edate{font-size:.7rem;color:var(--sub)}
+.etext{font-size:.9rem;margin:3px 0}
+.empty{text-align:center;color:var(--sub);padding:18px;font-size:.8rem}
 .actions{display:flex;gap:5px;margin-top:6px}
 .actions button{background:#333;color:#fff;border:1px solid var(--bor);border-radius:5px;padding:6px 9px;font-size:.68rem;cursor:pointer}
-.todaybox{border-left:4px solid var(--a);padding-left:9px;margin-bottom:12px}.bigday{font-size:1.1rem;font-weight:bold}
+.todaybox{border-left:4px solid var(--a);padding-left:9px;margin-bottom:12px}
+.bigday{font-size:1.1rem;font-weight:bold}
 .modal{position:fixed;inset:0;background:#000c;z-index:50;padding:12px;overflow:auto}
 .modalbox{max-width:600px;margin:20px auto;background:var(--card);border:1px solid var(--bor);border-radius:11px;padding:12px}
 </style>
@@ -79,7 +85,6 @@ textarea{min-height:70px}label{font-size:.72rem;color:var(--sub)}
 <button class="btn out" id="importBtn">📥 Importar agenda</button>
 <input id="file" type="file" accept=".json" style="display:none">
 </div>
-
 <div class="card">
 <h2>ℹ️ Mi Agenda</h2>
 <p style="color:var(--sub);font-size:.78rem;line-height:1.5">
@@ -99,12 +104,11 @@ Agenda personal sencilla. Los datos se guardan automáticamente en este disposit
 <script>
 "use strict";
 
-const KEY="mi_agenda_v3";
+const KEY="mi_agenda_v4";
 let events=[];
 try{events=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){events=[]}
 
 let view=new Date(),selected=today(),editId=null;
-
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
@@ -113,20 +117,13 @@ function today(){
  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
 }
 
-function save(){
- localStorage.setItem(KEY,JSON.stringify(events))
-}
+function save(){localStorage.setItem(KEY,JSON.stringify(events))}
 
 function fmt(s){
  return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"})
 }
 
-const names={
- cita:"🔵 Cita",
- cumple:"🎂 Cumpleaños",
- medico:"🩺 Médico",
- viaje:"✈️ Viaje"
-};
+const names={cita:"🔵 Cita",cumple:"🎂 Cumpleaños",medico:"🩺 Médico",viaje:"✈️ Viaje"};
 
 function showTab(n){
  ["hoy","agenda","ajustes"].forEach(x=>$(x).classList.toggle("active",x===n));
@@ -135,9 +132,9 @@ function showTab(n){
  if(n==="agenda")renderCalendar()
 }
 
-$("navHoy").addEventListener("click",()=>showTab("hoy"));
-$("navAgenda").addEventListener("click",()=>showTab("agenda"));
-$("navAjustes").addEventListener("click",()=>showTab("ajustes"));
+$("navHoy").onclick=()=>showTab("hoy");
+$("navAgenda").onclick=()=>showTab("agenda");
+$("navAjustes").onclick=()=>showTab("ajustes");
 
 function allEvents(){
  let a=[...events],y=new Date().getFullYear();
@@ -145,7 +142,7 @@ function allEvents(){
   for(let i=-1;i<4;i++)
    a.push({...e,id:"rep_"+e.id+"_"+(y+i),date:(y+i)+"-"+e.date.slice(5)})
  });
- return a;
+ return a
 }
 
 function card(e){
@@ -163,174 +160,99 @@ function card(e){
 function renderToday(){
  let d=new Date();
  $("todayTitle").textContent=d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
- let a=allEvents()
-  .filter(e=>e.date>=today())
-  .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")))
-  .slice(0,10);
-
- $("todayList").innerHTML=a.length?
-  a.map(card).join(""):
-  '<div class="empty">No tienes nada pendiente. 👍</div>';
-
- activateEventButtons($("todayList"));
+ let a=allEvents().filter(e=>e.date>=today())
+ .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||""))).slice(0,10);
+ $("todayList").innerHTML=a.length?a.map(card).join(""):'<div class="empty">No tienes nada pendiente. 👍</div>';
 }
 
 function renderCalendar(){
- let y=view.getFullYear(),
- m=view.getMonth(),
- first=(new Date(y,m,1).getDay()+6)%7,
- days=new Date(y,m+1,0).getDate(),
- a=allEvents();
-
+ let y=view.getFullYear(),m=view.getMonth(),first=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate(),a=allEvents();
  $("monthTitle").textContent=view.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
-
- let h=["Lu","Ma","Mi","Ju","Vi","Sá","Do"]
-  .map(x=>'<div class="week">'+x+"</div>").join("");
-
+ let h=["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(x=>'<div class="week">'+x+"</div>").join("");
  for(let i=0;i<first;i++)h+="<div></div>";
-
  for(let d=1;d<=days;d++){
-  let z=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),
-  es=a.filter(e=>e.date===z),
-  dots=es.length?
-   '<div class="dot">'+es.map(e=>e.type==="cita"?"🔵":e.type==="cumple"?"🎂":e.type==="medico"?"🩺":"✈️").join("")+"</div>":"";
-
-  h+='<div class="cal '+(z===today()?"today ":"")+(z===selected?"sel":"")+'" data-date="'+z+'">'+d+dots+"</div>";
+  let z=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),es=a.filter(e=>e.date===z);
+  let dots=es.length?'<div class="dot">'+es.map(e=>e.type==="cita"?"🔵":e.type==="cumple"?"🎂":e.type==="medico"?"🩺":"✈️").join("")+"</div>":"";
+  h+='<div class="cal '+(z===today()?"today ":"")+(z===selected?"sel":"")+'" data-date="'+z+'">'+d+dots+"</div>"
  }
-
  $("calendar").innerHTML=h;
-
- document.querySelectorAll(".cal[data-date]").forEach(x=>{
-  x.addEventListener("click",()=>{
-   selected=x.dataset.date;
-   renderCalendar()
-  })
+ document.querySelectorAll(".cal[data-date]").forEach(x=>x.onclick=()=>{
+  selected=x.dataset.date;renderCalendar()
  });
-
  renderDay()
 }
 
 function renderDay(){
  let d=new Date(selected+"T12:00:00");
  $("dayTitle").textContent=d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-
- let a=allEvents()
-  .filter(e=>e.date===selected)
-  .sort((a,b)=>(a.time||"").localeCompare(b.time||""));
-
- $("dayList").innerHTML=a.length?
-  a.map(card).join(""):
-  '<div class="empty">No hay anotaciones para este día.</div>';
-
- activateEventButtons($("dayList"));
+ let a=allEvents().filter(e=>e.date===selected).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+ $("dayList").innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay anotaciones para este día.</div>'
 }
 
-function activateEventButtons(box){
+$("prev").onclick=()=>{view.setMonth(view.getMonth()-1);renderCalendar()};
+$("next").onclick=()=>{view.setMonth(view.getMonth()+1);renderCalendar()};
+$("newBtn").onclick=()=>openForm(today(),null);
+$("dayNew").onclick=()=>openForm(selected,null);
 
- box.querySelectorAll(".editBtn").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-   let id=btn.dataset.id;
-   let e=events.find(x=>String(x.id)===String(id));
-   if(e)openForm(e.date,e);
-  })
- });
+/* EDITAR Y BORRAR: UN SOLO CONTROLADOR */
+document.addEventListener("click",function(e){
+ let b=e.target.closest(".editBtn,.deleteBtn");
+ if(!b)return;
 
- box.querySelectorAll(".deleteBtn").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-   let id=btn.dataset.id;
-   let e=events.find(x=>String(x.id)===String(id));
+ let id=b.getAttribute("data-id");
+ let x=events.find(a=>String(a.id)===String(id));
 
-   if(!e){
-    alert("No se puede borrar una repetición anual desde este día.");
-    return
-   }
+ if(!x){
+  alert("No se puede modificar esta repetición anual.");
+  return
+ }
 
-   if(confirm("¿Borrar esta anotación?")){
-    events=events.filter(x=>String(x.id)!==String(id));
-    save();
-    renderToday();
-    renderCalendar()
-   }
-  })
- })
-}
+ if(b.classList.contains("editBtn")){
+  openForm(x.date,x);
+  return
+ }
 
-$("prev").addEventListener("click",()=>{
- view.setMonth(view.getMonth()-1);
- renderCalendar()
+ if(b.classList.contains("deleteBtn")&&confirm("¿Borrar esta anotación?")){
+  events=events.filter(a=>String(a.id)!==String(id));
+  save();
+  renderToday();
+  renderCalendar()
+ }
 });
-
-$("next").addEventListener("click",()=>{
- view.setMonth(view.getMonth()+1);
- renderCalendar()
-});
-
-$("newBtn").addEventListener("click",()=>openForm(today(),null));
-
-$("dayNew").addEventListener("click",()=>openForm(selected,null));
 
 function openForm(date,e){
-
  editId=e?e.id:null;
 
  let m=document.createElement("div");
  m.className="modal";
- m.id="modal";
-
- m.innerHTML=
- '<div class="modalbox">'+
- '<h2>'+(editId?"✏️ Editar anotación":"➕ Nueva anotación")+'</h2>'+
-
- '<label>Tipo</label>'+
- '<select id="ft">'+
+ m.innerHTML='<div class="modalbox"><h2>'+
+ (editId?"✏️ Editar anotación":"➕ Nueva anotación")+
+ '</h2><label>Tipo</label><select id="ft">'+
  '<option value="cita">🔵 Cita</option>'+
  '<option value="cumple">🎂 Cumpleaños</option>'+
  '<option value="medico">🩺 Médico</option>'+
- '<option value="viaje">✈️ Viaje</option>'+
- '</select>'+
-
- '<label>Fecha</label>'+
- '<input id="fd" type="date" value="'+date+'">'+
-
- '<label>Hora</label>'+
- '<input id="fh" type="time" value="'+(e&&e.time||"")+'">'+
-
- '<label>Descripción</label>'+
- '<input id="fx" placeholder="¿Qué tienes previsto?" value="'+esc(e&&e.text||"")+'">'+
-
- '<label>Notas</label>'+
- '<textarea id="fn" placeholder="Detalles...">'+esc(e&&e.note||"")+'</textarea>'+
-
- '<label id="rl" style="display:none">'+
- '<input id="fr" type="checkbox" '+(e&&e.repeat?"checked":"")+
- '> Repetir cada año</label>'+
-
- '<div style="display:flex;gap:7px">'+
- '<button class="btn" id="fs">Guardar</button>'+
- '<button class="btn out" id="fc">Cancelar</button>'+
- '</div></div>';
+ '<option value="viaje">✈️ Viaje</option></select>'+
+ '<label>Fecha</label><input id="fd" type="date" value="'+date+'">'+
+ '<label>Hora</label><input id="fh" type="time" value="'+(e&&e.time||"")+'">'+
+ '<label>Descripción</label><input id="fx" placeholder="¿Qué tienes previsto?" value="'+esc(e&&e.text||"")+'">'+
+ '<label>Notas</label><textarea id="fn" placeholder="Detalles...">'+esc(e&&e.note||"")+'</textarea>'+
+ '<label id="rl" style="display:none"><input id="fr" type="checkbox" '+(e&&e.repeat?"checked":"")+'> Repetir cada año</label>'+
+ '<div style="display:flex;gap:7px"><button class="btn" id="fs">Guardar</button>'+
+ '<button class="btn out" id="fc">Cancelar</button></div></div>';
 
  document.body.appendChild(m);
 
  $("ft").value=e&&e.type||"cita";
 
- function rep(){
-  $("rl").style.display=$("ft").value==="cumple"?"block":"none"
- }
-
- $("ft").addEventListener("change",rep);
+ function rep(){$("rl").style.display=$("ft").value==="cumple"?"block":"none"}
+ $("ft").onchange=rep;
  rep();
 
- $("fc").addEventListener("click",()=>m.remove());
+ $("fc").onclick=()=>m.remove();
 
- $("fs").addEventListener("click",()=>{
-
+ $("fs").onclick=()=>{
   let text=$("fx").value.trim();
-
-  if(!text){
-   alert("Escribe una descripción.");
-   return
-  }
+  if(!text){alert("Escribe una descripción.");return}
 
   let x={
    id:editId||Date.now(),
@@ -342,67 +264,48 @@ function openForm(date,e){
    repeat:$("ft").value==="cumple"&&$("fr").checked
   };
 
-  if(editId)
-   events=events.map(a=>String(a.id)===String(editId)?x:a);
-  else
-   events.push(x);
+  if(editId)events=events.map(a=>String(a.id)===String(editId)?x:a);
+  else events.push(x);
 
   save();
-
   selected=x.date;
   view=new Date(x.date+"T12:00:00");
-
   m.remove();
-
   renderToday();
   renderCalendar()
- })
+ }
 }
 
-$("export").addEventListener("click",()=>{
- let b=new Blob(
-  [JSON.stringify({version:3,events},null,2)],
-  {type:"application/json"}
- ),
- a=document.createElement("a");
+$("export").onclick=()=>{
+ let b=new Blob([JSON.stringify({version:4,events},null,2)],{type:"application/json"});
+ let a=document.createElement("a");
  a.href=URL.createObjectURL(b);
  a.download="mi_agenda_"+today()+".json";
  a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),1000)
-});
+};
 
-$("importBtn").addEventListener("click",()=>$("file").click());
+$("importBtn").onclick=()=>$("file").click();
 
-$("file").addEventListener("change",e=>{
-
- let f=e.target.files[0];
- if(!f)return;
-
+$("file").onchange=e=>{
+ let f=e.target.files[0];if(!f)return;
  let r=new FileReader();
-
  r.onload=()=>{
   try{
    let d=JSON.parse(r.result);
-
    if(!Array.isArray(d.events))throw 0;
-
    events=d.events;
    save();
    renderToday();
    renderCalendar();
-
    alert("Agenda importada correctamente.")
-  }catch(x){
-   alert("Archivo no válido.")
-  }
+  }catch(x){alert("Archivo no válido.")}
  };
-
  r.readAsText(f)
-});
+};
 
 renderToday();
 renderCalendar();
-
 </script>
 </body>
 </html>
