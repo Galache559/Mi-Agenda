@@ -10,8 +10,7 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);padding-bottom:75px}
 header{background:var(--card);padding:13px;text-align:center;border-bottom:1px solid var(--bor)}
-h1{font-size:1.2rem;color:var(--a)}
-h2{font-size:1rem;color:var(--a);margin-bottom:10px}
+h1{font-size:1.2rem;color:var(--a)}h2{font-size:1rem;color:var(--a);margin-bottom:10px}
 .container{max-width:650px;margin:auto;padding:10px}
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);display:flex;border-top:1px solid var(--bor);padding:7px 0;z-index:20}
 nav button{width:33%;background:none;border:0;color:var(--sub);font-size:.72rem}
@@ -22,30 +21,21 @@ nav button.active{color:var(--a);font-weight:bold}
 .out{background:transparent;color:#fff;border:1px solid var(--bor)}
 .sm{width:auto;padding:6px 10px;font-size:.75rem}
 input,select,textarea{width:100%;background:var(--inp);color:#fff;border:1px solid var(--bor);border-radius:6px;padding:9px;margin:5px 0 9px;font-size:.9rem}
-textarea{min-height:70px}
-label{font-size:.72rem;color:var(--sub)}
+textarea{min-height:70px}label{font-size:.72rem;color:var(--sub)}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
 .week{font-size:.65rem;color:var(--sub);padding:5px}
 .cal{height:48px;background:var(--item);border-radius:6px;padding:7px 2px;position:relative;cursor:pointer;font-size:.8rem}
-.cal.today{border:1px solid var(--a)}
-.cal.sel{background:var(--a);color:#000;font-weight:bold}
+.cal.today{border:1px solid var(--a)}.cal.sel{background:var(--a);color:#000;font-weight:bold}
 .dot{position:absolute;bottom:3px;left:0;right:0;font-size:.55rem}
 .event{background:var(--item);border-left:4px solid var(--a);border-radius:7px;padding:9px;margin-bottom:7px}
 .cita{border-color:var(--blue)}.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.cumple{border-color:var(--pink)}
-.etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}
-.edate{font-size:.7rem;color:var(--sub)}
-.etext{font-size:.9rem;margin:3px 0}
-.empty{text-align:center;color:var(--sub);padding:18px;font-size:.8rem}
-.actions{display:flex;gap:5px;margin-top:6px}
-.actions button{background:#333;color:#fff;border:1px solid var(--bor);border-radius:5px;padding:6px 9px;font-size:.68rem;cursor:pointer}
-.todaybox{border-left:4px solid var(--a);padding-left:9px;margin-bottom:12px}
-.bigday{font-size:1.1rem;font-weight:bold}
-.nextbox{border-left:4px solid var(--blue);padding-left:9px;margin-bottom:10px}
-.nexttitle{font-size:1rem;font-weight:bold;color:var(--blue);margin-bottom:8px}
-.nextday{color:var(--a);font-size:.82rem;font-weight:bold;margin:8px 0 5px}
-.nextitem{background:var(--item);border-radius:7px;padding:8px;margin-bottom:5px;font-size:.82rem}
-.nexttime{color:var(--sub);font-size:.7rem}
-.nexttext{margin-top:2px}
+.etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}.edate{font-size:.7rem;color:var(--sub)}
+.etext{font-size:.9rem;margin:3px 0}.empty{text-align:center;color:var(--sub);padding:18px;font-size:.8rem}
+.actions{display:flex;gap:5px;margin-top:6px}.actions button{background:#333;color:#fff;border:1px solid var(--bor);border-radius:5px;padding:6px 9px;font-size:.68rem;cursor:pointer}
+.todaybox{border-left:4px solid var(--a);padding-left:9px;margin-bottom:12px}.bigday{font-size:1.1rem;font-weight:bold}
+.nextbox{border-left:4px solid var(--blue);padding-left:9px;margin-bottom:10px}.nexttitle{font-size:1rem;font-weight:bold;color:var(--blue);margin-bottom:8px}
+.nextday{color:var(--a);font-size:.82rem;font-weight:bold;margin:8px 0 5px}.nextitem{background:var(--item);border-radius:7px;padding:8px;margin-bottom:5px;font-size:.82rem}
+.nexttime{color:var(--sub);font-size:.7rem}.nexttext{margin-top:2px}
 .notice{background:#332900;border:1px solid var(--yel);color:#fff;border-radius:8px;padding:10px;margin-bottom:10px;display:none}
 .notice strong{color:var(--yel)}
 .modal{position:fixed;inset:0;background:#000c;z-index:50;padding:12px;overflow:auto}
@@ -59,7 +49,6 @@ label{font-size:.72rem;color:var(--sub)}
 <div class="container">
 
 <section id="hoy" class="tab active">
-
 <div id="notice" class="notice"></div>
 
 <div class="card">
@@ -86,7 +75,6 @@ Activa los avisos para recibir la alerta de las 14:00.
 <h2>➕ Añadir</h2>
 <button class="btn" id="newBtn">Nueva anotación</button>
 </div>
-
 </section>
 
 <section id="agenda" class="tab">
@@ -105,7 +93,6 @@ Activa los avisos para recibir la alerta de las 14:00.
 <div id="dayList"></div>
 <button class="btn" id="dayNew">＋ Añadir a este día</button>
 </div>
-
 </section>
 
 <section id="ajustes" class="tab">
@@ -123,7 +110,6 @@ Activa los avisos para recibir la alerta de las 14:00.
 Agenda personal sencilla. Los datos se guardan automáticamente en este dispositivo.
 </p>
 </div>
-
 </section>
 
 </div>
@@ -164,15 +150,36 @@ function addDays(dateString,days){
 function save(){localStorage.setItem(KEY,JSON.stringify(events))}
 
 function fmt(s){
- return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"})
+ return new Date(s+"T12:00:00").toLocaleDateString(
+  "es-ES",
+  {day:"2-digit",month:"2-digit",year:"numeric"}
+ )
 }
 
-const names={cita:"🔵 Cita",cumple:"🎂 Cumpleaños",medico:"🩺 Médico",viaje:"✈️ Viaje"};
+const names={
+ cita:"🔵 Cita",
+ cumple:"🎂 Cumpleaños",
+ medico:"🩺 Médico",
+ viaje:"✈️ Viaje"
+};
 
 function showTab(n){
- ["hoy","agenda","ajustes"].forEach(x=>$(x).classList.toggle("active",x===n));
- ["navHoy","navAgenda","navAjustes"].forEach((x,i)=>$(x).classList.toggle("active",["hoy","agenda","ajustes"][i]===n));
- if(n==="hoy"){renderToday();renderNext()}
+ ["hoy","agenda","ajustes"].forEach(x=>
+  $(x).classList.toggle("active",x===n)
+ );
+
+ ["navHoy","navAgenda","navAjustes"].forEach((x,i)=>
+  $(x).classList.toggle(
+   "active",
+   ["hoy","agenda","ajustes"][i]===n
+  )
+ );
+
+ if(n==="hoy"){
+  renderToday();
+  renderNext()
+ }
+
  if(n==="agenda")renderCalendar()
 }
 
@@ -182,10 +189,16 @@ $("navAjustes").onclick=()=>showTab("ajustes");
 
 function allEvents(){
  let a=[...events],y=new Date().getFullYear();
+
  events.filter(e=>e.repeat&&e.type==="cumple").forEach(e=>{
   for(let i=-1;i<4;i++)
-   a.push({...e,id:"rep_"+e.id+"_"+(y+i),date:(y+i)+"-"+e.date.slice(5)});
+   a.push({
+    ...e,
+    id:"rep_"+e.id+"_"+(y+i),
+    date:(y+i)+"-"+e.date.slice(5)
+   });
  });
+
  return a
 }
 
@@ -194,7 +207,10 @@ function card(e){
  '<div class="etype">'+names[e.type]+(e.repeat?" · ANUAL":"")+'</div>'+
  '<div class="edate">'+(e.time?e.time+" · ":"")+fmt(e.date)+'</div>'+
  '<div class="etext">'+esc(e.text)+'</div>'+
- (e.note?'<div style="font-size:.72rem;color:var(--sub)">'+esc(e.note)+'</div>':'')+
+ (e.note?
+  '<div style="font-size:.72rem;color:var(--sub)">'+
+  esc(e.note)+
+  '</div>':'')+
  '<div class="actions">'+
  '<button class="editBtn" data-id="'+esc(e.id)+'">✏️ Editar</button>'+
  '<button class="deleteBtn" data-id="'+esc(e.id)+'">🗑️ Borrar</button>'+
@@ -202,6 +218,7 @@ function card(e){
 }
 
 function renderToday(){
+
  let d=new Date();
 
  $("todayTitle").textContent=d.toLocaleDateString(
@@ -209,20 +226,20 @@ function renderToday(){
   {weekday:"long",day:"numeric",month:"long"}
  );
 
- /*
-  CAMBIO:
-  Antes mostraba todos los eventos futuros.
-  Ahora muestra SOLO los correspondientes a HOY.
- */
  let a=allEvents()
   .filter(e=>e.date===today())
-  .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+  .sort((a,b)=>
+   (a.date+(a.time||"")).localeCompare(
+    b.date+(b.time||"")
+   )
+  );
 
  $("todayList").innerHTML=a.length?
   a.map(card).join(""):
+
   '<div class="empty">No tienes nada previsto para hoy. 👍</div>';
 
- updateNotificationStatus();
+ updateNotificationStatus()
 }
 
 function renderNext(){
@@ -233,10 +250,15 @@ function renderNext(){
 
  let a=allEvents()
   .filter(e=>e.date===manana||e.date===pasado)
-  .sort((x,y)=>(x.date+(x.time||"")).localeCompare(y.date+(y.time||"")));
+  .sort((x,y)=>
+   (x.date+(x.time||"")).localeCompare(
+    y.date+(y.time||"")
+   )
+  );
 
  if(!a.length){
-  $("nextList").innerHTML='<div class="empty">No hay avisos para mañana ni pasado mañana. 👍</div>';
+  $("nextList").innerHTML=
+   '<div class="empty">No hay avisos para mañana ni pasado mañana. 👍</div>';
   return
  }
 
@@ -249,16 +271,23 @@ function renderNext(){
 
   let d=new Date(fecha+"T12:00:00");
 
-  let titulo=(i===0?"MAÑANA — ":"PASADO MAÑANA — ")+
-   d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+  let titulo=
+   (i===0?"MAÑANA — ":"PASADO MAÑANA — ")+
+   d.toLocaleDateString(
+    "es-ES",
+    {weekday:"long",day:"numeric",month:"long"}
+   );
 
   html+='<div class="nextday">'+titulo+'</div>';
 
   lista.forEach(e=>{
-   html+='<div class="nextitem">'+
+   html+=
+    '<div class="nextitem">'+
     '<div>'+names[e.type]+'</div>'+
     '<div class="nexttext">'+esc(e.text)+'</div>'+
-    (e.time?'<div class="nexttime">⏰ '+esc(e.time)+'</div>':'')+
+    (e.time?
+     '<div class="nexttime">⏰ '+esc(e.time)+'</div>':
+     '')+
     '</div>';
   });
  });
@@ -268,31 +297,54 @@ function renderNext(){
 
 function renderCalendar(){
 
- let y=view.getFullYear(),m=view.getMonth(),
+ let y=view.getFullYear(),
+ m=view.getMonth(),
  first=(new Date(y,m,1).getDay()+6)%7,
- days=new Date(y,m+1,0).getDate(),a=allEvents();
+ days=new Date(y,m+1,0).getDate(),
+ a=allEvents();
 
- $("monthTitle").textContent=view.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+ $("monthTitle").textContent=
+  view.toLocaleDateString(
+   "es-ES",
+   {month:"long",year:"numeric"}
+  );
 
- let h=["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(x=>'<div class="week">'+x+"</div>").join("");
+ let h=["Lu","Ma","Mi","Ju","Vi","Sá","Do"]
+  .map(x=>'<div class="week">'+x+"</div>")
+  .join("");
 
  for(let i=0;i<first;i++)h+="<div></div>";
 
  for(let d=1;d<=days;d++){
-  let z=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),
+
+  let z=y+"-"+String(m+1).padStart(2,"0")+
+   "-"+String(d).padStart(2,"0"),
+
   es=a.filter(e=>e.date===z);
 
-  let dots=es.length?'<div class="dot">'+es.map(e=>e.type==="cita"?"🔵":e.type==="cumple"?"🎂":e.type==="medico"?"🩺":"✈️").join("")+"</div>":"";
+  let dots=es.length?
+   '<div class="dot">'+
+   es.map(e=>
+    e.type==="cita"?"🔵":
+    e.type==="cumple"?"🎂":
+    e.type==="medico"?"🩺":"✈️"
+   ).join("")+
+   "</div>":"";
 
-  h+='<div class="cal '+(z===today()?"today ":"")+(z===selected?"sel":"")+'" data-date="'+z+'">'+d+dots+"</div>"
+  h+='<div class="cal '+
+   (z===today()?"today ":"")+
+   (z===selected?"sel":"")+
+   '" data-date="'+z+'">'+d+dots+"</div>"
  }
 
  $("calendar").innerHTML=h;
 
- document.querySelectorAll(".cal[data-date]").forEach(x=>x.onclick=()=>{
-  selected=x.dataset.date;
-  renderCalendar()
- });
+ document.querySelectorAll(".cal[data-date]").forEach(x=>
+  x.onclick=()=>{
+   selected=x.dataset.date;
+   renderCalendar()
+  }
+ );
 
  renderDay()
 }
@@ -301,21 +353,34 @@ function renderDay(){
 
  let d=new Date(selected+"T12:00:00");
 
- $("dayTitle").textContent=d.toLocaleDateString(
-  "es-ES",
-  {weekday:"long",day:"numeric",month:"long",year:"numeric"}
- );
+ $("dayTitle").textContent=
+  d.toLocaleDateString(
+   "es-ES",
+   {weekday:"long",day:"numeric",month:"long",year:"numeric"}
+  );
 
- let a=allEvents().filter(e=>e.date===selected)
-  .sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+ let a=allEvents()
+  .filter(e=>e.date===selected)
+  .sort((a,b)=>
+   (a.time||"").localeCompare(b.time||"")
+  );
 
  $("dayList").innerHTML=a.length?
   a.map(card).join(""):
+
   '<div class="empty">No hay anotaciones para este día.</div>'
 }
 
-$("prev").onclick=()=>{view.setMonth(view.getMonth()-1);renderCalendar()};
-$("next").onclick=()=>{view.setMonth(view.getMonth()+1);renderCalendar()};
+$("prev").onclick=()=>{
+ view.setMonth(view.getMonth()-1);
+ renderCalendar()
+};
+
+$("next").onclick=()=>{
+ view.setMonth(view.getMonth()+1);
+ renderCalendar()
+};
+
 $("newBtn").onclick=()=>openForm(today(),null);
 $("dayNew").onclick=()=>openForm(selected,null);
 
@@ -325,6 +390,7 @@ document.addEventListener("click",function(e){
  if(!b)return;
 
  let id=b.getAttribute("data-id");
+
  let x=events.find(a=>String(a.id)===String(id));
 
  if(!x){
@@ -337,8 +403,15 @@ document.addEventListener("click",function(e){
   return
  }
 
- if(b.classList.contains("deleteBtn")&&confirm("¿Borrar esta anotación?")){
-  events=events.filter(a=>String(a.id)!==String(id));
+ if(
+  b.classList.contains("deleteBtn")&&
+  confirm("¿Borrar esta anotación?")
+ ){
+
+  events=events.filter(
+   a=>String(a.id)!==String(id)
+  );
+
   save();
   renderToday();
   renderNext();
@@ -354,26 +427,54 @@ function openForm(date,e){
 
  m.className="modal";
 
- m.innerHTML='<div class="modalbox"><h2>'+
+ m.innerHTML=
+ '<div class="modalbox"><h2>'+
  (editId?"✏️ Editar anotación":"➕ Nueva anotación")+
- '</h2><label>Tipo</label><select id="ft">'+
+ '</h2>'+
+
+ '<label>Tipo</label><select id="ft">'+
  '<option value="cita">🔵 Cita</option>'+
  '<option value="cumple">🎂 Cumpleaños</option>'+
  '<option value="medico">🩺 Médico</option>'+
- '<option value="viaje">✈️ Viaje</option></select>'+
- '<label>Fecha</label><input id="fd" type="date" value="'+date+'">'+
- '<label>Hora</label><input id="fh" type="time" value="'+(e&&e.time||"")+'">'+
- '<label>Descripción</label><input id="fx" placeholder="¿Qué tienes previsto?" value="'+esc(e&&e.text||"")+'">'+
- '<label>Notas</label><textarea id="fn" placeholder="Detalles...">'+esc(e&&e.note||"")+'</textarea>'+
- '<label id="rl" style="display:none"><input id="fr" type="checkbox" '+(e&&e.repeat?"checked":"")+'> Repetir cada año</label>'+
- '<div style="display:flex;gap:7px"><button class="btn" id="fs">Guardar</button>'+
- '<button class="btn out" id="fc">Cancelar</button></div></div>';
+ '<option value="viaje">✈️ Viaje</option>'+
+ '</select>'+
+
+ '<label>Fecha</label>'+
+ '<input id="fd" type="date" value="'+date+'">'+
+
+ '<label>Hora</label>'+
+ '<input id="fh" type="time" value="'+
+ (e&&e.time||"")+
+ '">'+
+
+ '<label>Descripción</label>'+
+ '<input id="fx" placeholder="¿Qué tienes previsto?" value="'+
+ esc(e&&e.text||"")+
+ '">'+
+
+ '<label>Notas</label>'+
+ '<textarea id="fn" placeholder="Detalles...">'+
+ esc(e&&e.note||"")+
+ '</textarea>'+
+
+ '<label id="rl" style="display:none">'+
+ '<input id="fr" type="checkbox" '+
+ (e&&e.repeat?"checked":"")+
+ '> Repetir cada año</label>'+
+
+ '<div style="display:flex;gap:7px">'+
+ '<button class="btn" id="fs">Guardar</button>'+
+ '<button class="btn out" id="fc">Cancelar</button>'+
+ '</div></div>';
 
  document.body.appendChild(m);
 
  $("ft").value=e&&e.type||"cita";
 
- function rep(){$("rl").style.display=$("ft").value==="cumple"?"block":"none"}
+ function rep(){
+  $("rl").style.display=
+   $("ft").value==="cumple"?"block":"none"
+ }
 
  $("ft").onchange=rep;
  rep();
@@ -396,15 +497,23 @@ function openForm(date,e){
    time:$("fh").value,
    text:text,
    note:$("fn").value.trim(),
-   repeat:$("ft").value==="cumple"&&$("fr").checked
+   repeat:
+    $("ft").value==="cumple"&&
+    $("fr").checked
   };
 
-  if(editId)events=events.map(a=>String(a.id)===String(editId)?x:a);
-  else events.push(x);
+  if(editId)
+   events=events.map(
+    a=>String(a.id)===String(editId)?x:a
+   );
+  else
+   events.push(x);
 
   save();
+
   selected=x.date;
   view=new Date(x.date+"T12:00:00");
+
   m.remove();
 
   renderToday();
@@ -422,11 +531,15 @@ $("export").onclick=()=>{
  );
 
  let a=document.createElement("a");
+
  a.href=URL.createObjectURL(b);
  a.download="mi_agenda_"+today()+".json";
  a.click();
 
- setTimeout(()=>URL.revokeObjectURL(a.href),1000)
+ setTimeout(
+  ()=>URL.revokeObjectURL(a.href),
+  1000
+ )
 };
 
 $("importBtn").onclick=()=>$("file").click();
@@ -439,7 +552,9 @@ $("file").onchange=e=>{
  let r=new FileReader();
 
  r.onload=()=>{
+
   try{
+
    let d=JSON.parse(r.result);
 
    if(!Array.isArray(d.events))throw 0;
@@ -454,6 +569,7 @@ $("file").onchange=e=>{
    alert("Agenda importada correctamente.")
 
   }catch(x){
+
    alert("Archivo no válido.")
   }
  };
@@ -476,24 +592,35 @@ function tomorrowEvents(){
 
  return allEvents()
   .filter(e=>e.date===manana)
-  .sort((a,b)=>(a.time||"").localeCompare(b.time||""))
+  .sort((a,b)=>
+   (a.time||"").localeCompare(b.time||"")
+  )
 }
 
 function showAlertMessage(lista){
 
  if(!lista.length)return;
 
- let texto="🔔 AVISO\n\nMañana tienes:\n\n";
+ let texto=
+  "🔔 AVISO\n\nMañana tienes:\n\n";
 
  lista.forEach(e=>{
-  texto+=(e.time?"⏰ "+e.time+" — ":"• ")+e.text+"\n";
+  texto+=
+   (e.time?
+    "⏰ "+e.time+" — ":
+    "• ")+
+   e.text+"\n";
  });
 
  $("notice").innerHTML=
   "<strong>🔔 AVISO</strong><br><br>"+
   "Mañana tienes:<br>"+
   lista.map(
-   e=>(e.time?"⏰ "+esc(e.time)+" — ":"• ")+esc(e.text)
+   e=>
+    (e.time?
+     "⏰ "+esc(e.time)+" — ":
+     "• ")+
+    esc(e.text)
   ).join("<br>");
 
  $("notice").style.display="block";
@@ -505,7 +632,10 @@ function playAlertSound(){
 
  try{
 
-  let AudioContext=window.AudioContext||window.webkitAudioContext;
+  let AudioContext=
+   window.AudioContext||
+   window.webkitAudioContext;
+
   if(!AudioContext)return;
 
   let ctx=new AudioContext();
@@ -517,11 +647,26 @@ function playAlertSound(){
    let gain=ctx.createGain();
 
    osc.type="sine";
-   osc.frequency.value=i===0?880:i===1?1100:880;
 
-   gain.gain.setValueAtTime(0.0001,now+i*0.35);
-   gain.gain.exponentialRampToValueAtTime(0.35,now+i*0.35+0.03);
-   gain.gain.exponentialRampToValueAtTime(0.0001,now+i*0.35+0.28);
+   osc.frequency.value=
+    i===0?880:
+    i===1?1100:
+    880;
+
+   gain.gain.setValueAtTime(
+    0.0001,
+    now+i*0.35
+   );
+
+   gain.gain.exponentialRampToValueAtTime(
+    0.35,
+    now+i*0.35+0.03
+   );
+
+   gain.gain.exponentialRampToValueAtTime(
+    0.0001,
+    now+i*0.35+0.28
+   );
 
    osc.connect(gain);
    gain.connect(ctx.destination);
@@ -541,6 +686,7 @@ function updateNotificationStatus(){
    "Este navegador no permite notificaciones.";
 
   $("notificationBtn").style.display="none";
+
   return
  }
 
@@ -549,21 +695,24 @@ function updateNotificationStatus(){
   $("notificationStatus").textContent=
    "✅ Avisos activados. La Agenda puede mostrar notificaciones.";
 
-  $("notificationBtn").textContent="✅ Avisos activados";
+  $("notificationBtn").textContent=
+   "✅ Avisos activados";
 
  }else if(Notification.permission==="denied"){
 
   $("notificationStatus").textContent=
    "⚠️ Las notificaciones están bloqueadas. Debes permitirlas desde los ajustes del navegador.";
 
-  $("notificationBtn").textContent="🔔 Permitir avisos";
+  $("notificationBtn").textContent=
+   "🔔 Permitir avisos";
 
  }else{
 
   $("notificationStatus").textContent=
    "Activa los avisos para recibir la alerta de las 14:00.";
 
-  $("notificationBtn").textContent="🔔 Activar avisos";
+  $("notificationBtn").textContent=
+   "🔔 Activar avisos";
  }
 }
 
@@ -577,7 +726,8 @@ $("notificationBtn").onclick=async()=>{
 
  try{
 
-  let permission=await Notification.requestPermission();
+  let permission=
+   await Notification.requestPermission();
 
   updateNotificationStatus();
 
@@ -597,13 +747,16 @@ $("notificationBtn").onclick=async()=>{
 
  }catch(e){
 
-  alert("No se ha podido activar el permiso de notificaciones.")
+  alert(
+   "No se ha podido activar el permiso de notificaciones."
+  )
  }
 };
 
 function checkAlerts(){
 
  let ahora=new Date();
+
  let hora=ahora.getHours();
  let minuto=ahora.getMinutes();
 
@@ -622,7 +775,10 @@ function checkAlerts(){
  playAlertSound();
  showAlertMessage(lista);
 
- if("Notification" in window&&Notification.permission==="granted"){
+ if(
+  "Notification" in window&&
+  Notification.permission==="granted"
+ ){
 
   lista.forEach(e=>{
 
@@ -631,7 +787,11 @@ function checkAlerts(){
     new Notification(
      "🔔 Mi Agenda — Mañana",
      {
-      body:(e.time?e.time+" — ":"")+e.text
+      body:
+       (e.time?
+        e.time+" — ":
+        "")+
+       e.text
      }
     );
 
