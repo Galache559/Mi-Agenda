@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mi Agenda</title>
+<meta name="theme-color" content="#121212">
+<style>
+:root{--bg:#121212;--card:#1e1e1e;--item:#252525;--inp:#2a2a2a;--a:#00e676;--txt:#fff;--sub:#aaa;--bor:#333;--red:#ff5252;--blue:#29b6f6;--yel:#ffd740;--pink:#ff80ab}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);padding-bottom:75px}
+header{position:sticky;top:0;z-index:10;background:var(--card);padding:13px;text-align:center;border-bottom:1px solid var(--bor)}
+h1{font-size:1.2rem;color:var(--a);letter-spacing:1px}
+.container{max-width:650px;margin:auto;padding:10px}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--card);display:flex;border-top:1px solid var(--bor);padding:7px 0}
+nav button{width:33.33%;background:none;border:0;color:var(--sub);font-size:.72rem;display:flex;flex-direction:column;gap:2px;align-items:center}
+nav button.active{color:var(--a);font-weight:bold}
+.tab{display:none}.tab.active{display:block}
+.card{background:var(--card);border:1px solid var(--bor);border-radius:11px;padding:12px;margin-bottom:10px}
+.card h2{font-size:1rem;color:var(--a);margin-bottom:10px}
+button{cursor:pointer}
+.btn{background:var(--a);color:#000;border:0;border-radius:7px;padding:10px;width:100%;font-weight:bold}
+.out{background:transparent;color:var(--txt);border:1px solid var(--bor)}
+.danger{background:transparent;color:var(--red);border:1px solid var(--red)}
+.sm{width:auto;padding:5px 9px;font-size:.75rem}
+input,select,textarea{width:100%;background:var(--inp);color:var(--txt);border:1px solid var(--bor);border-radius:6px;padding:9px;margin-bottom:8px;font-size:.9rem}
+textarea{min-height:70px;resize:vertical}
+label{font-size:.72rem;color:var(--sub)}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.week{font-size:.65rem;color:var(--sub);padding:5px 0}
+.cal{min-height:47px;padding:6px 2px;background:var(--item);border-radius:6px;font-size:.78rem;cursor:pointer;position:relative}
+.cal.today{border:1px solid var(--a)}
+.cal.sel{background:var(--a);color:#000;font-weight:bold}
+.dot{position:absolute;bottom:3px;left:0;right:0;font-size:.55rem}
+.event{background:var(--item);border-left:4px solid var(--a);border-radius:7px;padding:9px;margin-bottom:7px}
+.event.cita{border-color:var(--blue)}.event.medico{border-color:var(--red)}
+.event.viaje{border-color:var(--yel)}.event.cumple{border-color:var(--pink)}
+.etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}
+.edate{font-size:.72rem;color:var(--sub)}
+.etext{font-size:.9rem;margin:3px 0}
+.eactions{display:flex;gap:5px;margin-top:6px}
+.eactions button{background:#333;color:#fff;border:1px solid var(--bor);border-radius:5px;padding:5px 8px;font-size:.68rem}
+.empty{text-align:center;color:var(--sub);padding:18px;font-size:.8rem}
+.todaybox{border-left:4px solid var(--a);padding-left:9px;margin-bottom:12px}
+.bigday{font-size:1.15rem;font-weight:bold}
+.hint{font-size:.7rem;color:var(--sub);margin-top:3px}
+</style>
+</head>
+<body>
+
+<header><h1>📅 MI AGENDA</h1></header>
+
+<div class="container">
+
+<section id="tab-hoy" class="tab active">
+<div class="card">
+<div class="todaybox">
+<div class="bigday" id="todayTitle"></div>
+<div class="hint">Próximos acontecimientos</div>
+</div>
+<div id="todayList"></div>
+</div>
+<div class="card">
+<h2>➕ Añadir</h2>
+<button class="btn" onclick="newEvent()">Nueva anotación</button>
+</div>
+</section>
+
+<section id="tab-agenda" class="tab">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<button class="btn out sm" onclick="changeMonth(-1)">❮</button>
+<h2 id="monthTitle" style="margin:0"></h2>
+<button class="btn out sm" onclick="changeMonth(1)">❯</button>
+</div>
+<div class="calendar" id="calendar"></div>
+</div>
+<div class="card">
+<h2 id="dayTitle">Selecciona un día</h2>
+<div id="dayList" class="empty">Pulsa un día del calendario.</div>
+<button class="btn" onclick="newEvent(selectedDate)">＋ Añadir a este día</button>
+</div>
+</section>
+
+<section id="tab-ajustes" class="tab">
+<div class="card">
+<h2>⚙️ Ajustes</h2>
+<button class="btn out" onclick="exportData()">💾 Exportar agenda</button><br><br>
+<button class="btn out" onclick="document.getElementById('file').click()">📥 Importar agenda</button>
+<input id="file" type="file" accept=".json" style="display:none" onchange="importData(event)">
+</div>
+<div class="card">
+<h2>ℹ️ Mi Agenda</h2>
+<div style="font-size:.78rem;color:var(--sub);line-height:1.5">
+Agenda personal sencilla.<br>Los datos se guardan automáticamente en este dispositivo.
+</div>
+</div>
+</section>
+
+</div>
+
+<nav>
+<button id="n-hoy" class="active" onclick="tab('hoy')">🏠<span>Hoy</span></button>
+<button id="n-agenda" onclick="tab('agenda')">📅<span>Agenda</span></button>
+<button id="n-ajustes" onclick="tab('ajustes')">⚙️<span>Ajustes</span></button>
+</nav>
+
+<script>
+const KEY='mi_agenda_v1';
+let events=JSON.parse(localStorage.getItem(KEY)||'[]'),viewDate=new Date(),selectedDate=iso(new Date()),editId=null;
+const names={cita:'🔵 Cita',cumple:'🎂 Cumpleaños',medico:'🩺 Médico',viaje:'✈️ Viaje'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const iso=d=>{d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const save=()=>localStorage.setItem(KEY,JSON.stringify(events));
+const today=()=>iso(new Date());
+
+function tab(x){
+document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+document.getElementById('tab-'+x).classList.add('active');
+document.querySelectorAll('nav button').forEach(e=>e.classList.remove('active'));
+document.getElementById('n-'+x).classList.add('active');
+if(x==='hoy')renderToday();
+if(x==='agenda')renderCalendar()
+}
+
+function changeMonth(n){viewDate.setMonth(viewDate.getMonth()+n);renderCalendar()}
+
+function actualEvents(){
+let a=[...events];
+events.filter(e=>e.repeat&&e.type==='cumple').forEach(e=>{
+let y=viewDate.getFullYear();
+let d=e.date.slice(5);
+if(!a.some(x=>x.id===e.id+'-'+y))a.push({...e,id:e.id+'-'+y,date:y+'-'+d})
+});
+return a
+}
+
+function futureEvents(){
+let a=[...events];
+let y=new Date().getFullYear();
+events.filter(e=>e.repeat&&e.type==='cumple').forEach(e=>{
+for(let i=0;i<4;i++){
+let yy=y+i,d=yy+'-'+e.date.slice(5);
+if(!a.some(x=>x.date===d&&x.text===e.text&&x.type==='cumple'))a.push({...e,id:e.id+'-'+yy,date:d})
+}});
+return a
+}
+
+function renderToday(){
+let t=today(),d=new Date();
+todayTitle.innerText=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+let a=futureEvents().filter(e=>e.date>=t).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||''))).slice(0,10);
+todayList.innerHTML=a.length?a.map(card).join(''):'<div class="empty">No tienes nada pendiente. 👍</div>'
+}
+
+function renderCalendar(){
+let y=viewDate.getFullYear(),m=viewDate.getMonth(),first=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+monthTitle.innerText=viewDate.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+let a=actualEvents(),h='';
+['Lu','Ma','Mi','Ju','Vi','Sá','Do'].forEach(x=>h+=`<div class="week">${x}</div>`);
+for(let i=0;i<first;i++)h+='<div></div>';
+for(let d=1;d<=days;d++){
+let z=iso(new Date(y,m,d)),es=a.filter(e=>e.date===z);
+let dots=es.length?'<div class="dot">'+es.map(e=>e.type==='cita'?'🔵':e.type==='cumple'?'🎂':e.type==='medico'?'🩺':'✈️').join('')+'</div>':'';
+h+=`<div class="cal ${z===today()?'today':''} ${z===selectedDate?'sel':''}" onclick="selectDate('${z}')">${d}${dots}</div>`
+}
+calendar.innerHTML=h;renderDay()
+}
+
+function selectDate(d){selectedDate=d;renderCalendar()}
+
+function renderDay(){
+let d=new Date(selectedDate+'T12:00:00');
+dayTitle.innerText=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+let a=actualEvents().filter(e=>e.date===selectedDate).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
+dayList.innerHTML=a.length?a.map(card).join(''):'<div class="empty">No hay anotaciones para este día.</div>'
+}
+
+function card(e){
+return`<div class="event ${e.type}">
+<div class="etype">${names[e.type]}${e.repeat?' · ANUAL':''}</div>
+<div class="edate">${e.time?e.time+' · ':''}${formatDate(e.date)}</div>
+<div class="etext">${esc(e.text)}</div>
+${e.note?`<div style="font-size:.72rem;color:var(--sub)">${esc(e.note)}</div>`:''}
+<div class="eactions"><button onclick="editEvent('${e.id}')">✏️ Editar</button><button onclick="deleteEvent('${e.id}')">🗑️ Borrar</button></div>
+</div>`
+}
+
+function formatDate(s){return new Date(s+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'})}
+
+function newEvent(date){
+editId=null;showForm(date||today(),{})
+}
+
+function editEvent(id){
+let e=events.find(x=>String(x.id)===String(id));if(!e)return;
+editId=e.id;showForm(e.date,e)
+}
+
+function showForm(date,e){
+let old=document.getElementById('modal');if(old)old.remove();
+document.body.insertAdjacentHTML('beforeend',`<div id="modal" style="position:fixed;inset:0;background:#000b;z-index:50;padding:12px;overflow:auto">
+<div class="card" style="max-width:600px;margin:20px auto">
+<h2>${editId?'✏️ Editar anotación':'➕ Nueva anotación'}</h2>
+<label>Tipo</label>
+<select id="fType">
+<option value="cita">🔵 Cita</option><option value="cumple">🎂 Cumpleaños</option>
+<option value="medico">🩺 Médico</option><option value="viaje">✈️ Viaje</option>
+</select>
+<label>Fecha</label><input id="fDate" type="date" value="${date}">
+<label>Hora (opcional)</label><input id="fTime" type="time" value="${e.time||''}">
+<label>Descripción</label><input id="fText" placeholder="¿Qué tienes previsto?" value="${esc(e.text||'')}">
+<label>Notas (opcional)</label><textarea id="fNote" placeholder="Detalles...">${esc(e.note||'')}</textarea>
+<label id="repLabel" style="display:none"><input id="fRepeat" type="checkbox" style="width:auto" ${e.repeat?'checked':''}> Repetir cada año</label>
+<div style="display:flex;gap:7px"><button class="btn" onclick="saveEvent()">Guardar</button><button class="btn out" onclick="closeForm()">Cancelar</button></div>
+</div></div>`);
+fType.value=e.type||'cita';fType.onchange=toggleRepeat;toggleRepeat()
+}
+
+function toggleRepeat(){repLabel.style.display=fType.value==='cumple'?'block':'none'}
+
+function saveEvent(){
+let text=fText.value.trim();if(!text)return alert('Escribe una descripción.');
+let e={id:editId||Date.now(),type:fType.value,date:fDate.value,time:fTime.value,text,note:fNote.value.trim(),repeat:fType.value==='cumple'&&fRepeat.checked};
+if(editId)events=events.map(x=>x.id==editId?e:x);else events.push(e);
+save();closeForm();selectedDate=e.date;viewDate=new Date(e.date+'T12:00:00');renderToday();renderCalendar()
+}
+
+function closeForm(){let x=document.getElementById('modal');if(x)x.remove()}
+
+function deleteEvent(id){
+if(String(id).includes('-'))return alert('Los cumpleaños anuales se eliminan modificando el cumpleaños original.');
+if(!confirm('¿Borrar esta anotación?'))return;
+events=events.filter(e=>String(e.id)!==String(id));save();renderToday();renderCalendar()
+}
+
+function exportData(){
+let b=new Blob([JSON.stringify({version:1,events},null,2)],{type:'application/json'}),a=document.createElement('a');
+a.href=URL.createObjectURL(b);a.download='mi_agenda_'+today()+'.json';a.click();
+setTimeout(()=>URL.revokeObjectURL(a.href),1000)
+}
+
+function importData(ev){
+let f=ev.target.files[0];if(!f)return;
+let r=new FileReader();
+r.onload=()=>{try{let d=JSON.parse(r.result);if(!d||!Array.isArray(d.events))throw 0;events=d.events;save();alert('Agenda importada correctamente.');renderToday();renderCalendar()}catch(e){alert('Archivo no válido.')}};
+r.readAsText(f)
+}
+
+renderToday();renderCalendar();
+</script>
+</body>
+</html>
