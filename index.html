@@ -100,8 +100,6 @@ label{font-size:.75rem;color:var(--sub)}
 .archivoItem button{padding:5px 8px}.archivoVacio{color:var(--sub);font-size:.82rem}
 
 .annualBadge{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:8px;background:#e91e63;color:#fff;font-size:.58rem;font-weight:bold}
-.birthdayInfo{background:var(--item);border-radius:9px;padding:10px 12px;margin-bottom:10px;font-size:.8rem}
-.birthdayInfo strong{color:var(--a)}
 
 /* =========================
    v7.1 — APARIENCIA
@@ -239,12 +237,28 @@ input:focus,select:focus,textarea:focus{
   .calendar{gap:2px}
   .cal{height:50px}
 }
+.archivoCustomCard h3{margin-bottom:8px}.archivoCustomCard{border-color:var(--bor)}
 </style>
+
+<style>
+.archivoCompacto{display:flex;flex-direction:column;gap:5px}
+.archivoFila{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;background:var(--item);border-radius:8px;font-size:.8rem}
+.archivoFila .archivoTitulo{font-weight:700;min-width:0}
+.archivoFila .archivoContexto{color:var(--sub);white-space:pre-wrap;min-width:0}
+.archivoFila input{width:100%;min-width:0;margin:0;padding:7px 8px;font-size:.82rem}
+.archivoNueva{background:transparent;border:1px dashed #46505a}
+.archivoNueva .archivoGuardar{white-space:nowrap}
+.archivoBorrarCarpeta{font-size:.78rem;padding:5px 8px;margin-left:5px}
+.archivoFila .archivoPlus{width:30px;height:30px;padding:0;border-radius:50%;font-size:1.05rem;line-height:1}
+.carpetaCabecera{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.carpetaCabecera h3{margin:0}
+</style>
+
 </head>
 
 <body>
 
-<header><h1>📅 MI AGENDA v6.4 — HOY</h1></header>
+<header><h1>📅 MI AGENDA</h1></header>
 
 <div class="container">
 
@@ -258,11 +272,10 @@ input:focus,select:focus,textarea:focus{
 <div class="todaySummary" id="todaySummary"></div>
 </div>
 <div class="quickrow">
-<button class="btn sm" id="todayQuickNew" id="quickAdd">➕ Añadir</button>
-<button class="btn out sm" id="todayQuickAgenda" id="quickAgenda">📅 Ver agenda</button>
+<button class="btn sm" id="quickAdd">➕ Añadir</button>
+
 </div>
 <div class="filterbar" id="todayFilters">
-<button data-filter="all" class="active">TODOS</button>
 <button data-filter="cita">📅 CITAS</button>
 <button data-filter="medico">🩺 MÉDICO</button>
 <button data-filter="cumple">🎂 CUMPLE</button>
@@ -279,19 +292,6 @@ input:focus,select:focus,textarea:focus{
 </div>
 
 <div class="card">
-<h2>🔔 Avisos automáticos</h2>
-<p id="notificationStatus"
-style="color:var(--sub);font-size:.75rem;line-height:1.4;margin-bottom:8px">
-Activa los avisos para recibir cada día a las 14:00 un resumen de lo previsto para mañana.
-</p>
-<div id="nextAlertInfo"
-style="color:var(--blue);font-size:.75rem;line-height:1.4;margin-bottom:8px"></div>
-<button class="btn out" id="notificationBtn">
-🔔 Avisos automáticos
-</button>
-</div>
-
-<div class="card">
 <h2>➕ Añadir</h2>
 <button class="btn" id="newBtn">Nueva anotación</button>
 </div>
@@ -300,15 +300,6 @@ style="color:var(--blue);font-size:.75rem;line-height:1.4;margin-bottom:8px"></d
 
 
 <section id="agenda" class="tab">
-<div id="tareasPanel" class="card">
-  <h3>✅ TAREAS</h3>
-  <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-    <button class="sm" onclick="nuevaTareaAgenda()">➕ Nueva tarea</button>
-    <button class="sm out" onclick="filtrarTareasAgenda('pendientes')">Pendientes</button>
-    <button class="sm out" onclick="filtrarTareasAgenda('todas')">Todas</button>
-  </div>
-  <div id="listaTareasAgenda"></div>
-</div>
 
 
 
@@ -336,15 +327,9 @@ style="margin:0;text-align:center;flex:1"></h2>
 
 <div class="card">
 
-<h2 id="dayTitle"></h2>
+<h2>📅 CALENDARIO</h2>
 
-<div class="filterbar" id="dayFilters">
-<button data-filter="all" class="active">TODOS</button>
-<button data-filter="cita">📅 CITAS</button>
-<button data-filter="medico">🩺 MÉDICO</button>
-<button data-filter="cumple">🎂 CUMPLE</button>
-<button data-filter="viaje">✈️ VIAJES</button>
-</div>
+<h2 id="dayTitle"></h2>
 
 <div id="dayList"></div>
 
@@ -354,17 +339,63 @@ style="margin:0;text-align:center;flex:1"></h2>
 
 </div>
 
+<div class="card">
+
+<h2>📊 INFORME MENSUAL</h2>
+
+<div class="filterbar" id="monthFilters"></div>
+
+<div id="monthList"></div>
+
+</div>
+
 </section>
 
 
 <section id="archivo" class="tab">
   <h2>📁 ARCHIVO</h2>
-  <p class="sub">Datos de coche, casa, telefonía, seguros y vacaciones.</p>
-  <div class="card"><h3>🚗 Coche</h3><div id="archivoCoche" class="archivoLista"></div></div>
-  <div class="card"><h3>🏠 Casa</h3><div id="archivoCasa" class="archivoLista"></div></div>
-  <div class="card"><h3>📱 Telefonía</h3><div id="archivoTelefonia" class="archivoLista"></div></div>
-  <div class="card"><h3>🛡️ Seguros</h3><div id="archivoSeguros" class="archivoLista"></div></div>
-  <div class="card"><h3>🏖️ Vacaciones</h3><div id="archivoVacaciones" class="archivoLista"></div></div>
+
+  <button class="btn" id="nuevaCarpetaArchivoBtn" type="button" style="margin-bottom:10px;">
+    ➕ NUEVA CARPETA
+  </button>
+
+  <div class="card">
+  <div class="carpetaCabecera">
+    <h3>🚗 Coche</h3>
+    <button class="archivoPlus" type="button" title="Nuevo apartado" onclick="nuevoApartadoFijoArchivo('Coche')">+</button>
+  </div>
+  <div id="archivoCoche" class="archivoLista"></div>
+</div>
+  <div class="card">
+  <div class="carpetaCabecera">
+    <h3>🏠 Casa</h3>
+    <button class="archivoPlus" type="button" title="Nuevo apartado" onclick="nuevoApartadoFijoArchivo('Casa')">+</button>
+  </div>
+  <div id="archivoCasa" class="archivoLista"></div>
+</div>
+  <div class="card">
+  <div class="carpetaCabecera">
+    <h3>📱 Telefonía</h3>
+    <button class="archivoPlus" type="button" title="Nuevo apartado" onclick="nuevoApartadoFijoArchivo('Telefonía')">+</button>
+  </div>
+  <div id="archivoTelefonia" class="archivoLista"></div>
+</div>
+  <div class="card">
+  <div class="carpetaCabecera">
+    <h3>🛡️ Seguros</h3>
+    <button class="archivoPlus" type="button" title="Nuevo apartado" onclick="nuevoApartadoFijoArchivo('Seguros')">+</button>
+  </div>
+  <div id="archivoSeguros" class="archivoLista"></div>
+</div>
+  <div class="card">
+  <div class="carpetaCabecera">
+    <h3>🏖️ Vacaciones</h3>
+    <button class="archivoPlus" type="button" title="Nuevo apartado" onclick="nuevoApartadoFijoArchivo('Vacaciones')">+</button>
+  </div>
+  <div id="archivoVacaciones" class="archivoLista"></div>
+</div>
+
+  <div id="carpetasNuevasArchivo"></div>
 </section>
 
 <section id="ajustes" class="tab">
@@ -394,6 +425,9 @@ style="margin:0;text-align:center;flex:1"></h2>
 📥 Importar agenda
 </button>
 <br><br>
+
+
+
 <button class="btn out" id="importArchivoBtn">
 📁 Importar copia de ARCHIVO
 </button>
@@ -463,8 +497,9 @@ try{
 let view=new Date(),
 selected=today(),
 editId=null,
-todayFilter="all",
-dayFilter="all";
+todayFilter="cita",
+monthFilter="cita",
+agendaDisplayMode="day";
 
 
 const $=id=>document.getElementById(id);
@@ -555,6 +590,7 @@ function showTab(n){
  }
 
  if(n==="agenda"){
+  renderTareasAgenda();
   renderCalendar();
  }
 
@@ -575,7 +611,7 @@ if($("quickAdd"))$("quickAdd").onclick=()=>{
   if(b)b.click();
  },50);
 };
-if($("quickAgenda"))$("quickAgenda").onclick=()=>showTab("agenda");
+
 
 
 
@@ -650,7 +686,7 @@ function card(e){
 
   return '<div class="event '+e.type+(e.done?" done":"")+'" data-id="'+esc(e.id)+'">'+
     '<div class="etype">'+
-      names[e.type]+
+      (names[e.type]||("📌 "+String(e.type||"Tipo")))+
       (e.repeat?" · ANUAL":"")+
       prioridad+
     '</div>'+
@@ -696,16 +732,66 @@ function setupFilters(){
   });
  }
 
- const df=$("dayFilters");
- if(df){
-  df.querySelectorAll("button[data-filter]").forEach(b=>{
-   b.onclick=()=>{
-    dayFilter=b.dataset.filter;
-    setFilter("dayFilters",dayFilter);
-    renderDay();
-   };
-  });
- }
+ setupMonthFilters();
+}
+
+function typeLabel(type){
+ if(names[type])return names[type];
+ return "📌 "+String(type||"Tipo")
+  .replace(/^custom_/i,"")
+  .replace(/_/g," ");
+}
+
+function getMonthTypes(){
+ const base=["cita","medico","cumple","viaje"];
+ const extra=[];
+ allEvents().forEach(e=>{
+  if(e&&e.type&&!base.includes(e.type)&&!extra.includes(e.type)){
+   extra.push(e.type);
+  }
+ });
+ return base.concat(extra);
+}
+
+function setupMonthFilters(){
+ const box=$("monthFilters");
+ if(!box)return;
+ const tipos=getMonthTypes();
+ box.innerHTML=tipos.map(t=>
+  '<button data-filter="'+esc(t)+'">'+esc(typeLabel(t))+'</button>'
+ ).join("");
+ box.querySelectorAll("button[data-filter]").forEach(b=>{
+  b.onclick=()=>{
+   monthFilter=b.dataset.filter;
+   setFilter("monthFilters",monthFilter);
+   renderMonthlyReport();
+  };
+ });
+ setFilter("monthFilters",monthFilter);
+}
+
+function renderMonthlyReport(){
+ const y=view.getFullYear();
+ const m=view.getMonth();
+ const inicio=y+"-"+String(m+1).padStart(2,"0")+"-01";
+ const fin=new Date(y,m+1,0).getDate();
+ const finFecha=y+"-"+String(m+1).padStart(2,"0")+"-"+String(fin).padStart(2,"0");
+
+ setupMonthFilters();
+
+ const mes=allEvents()
+  .filter(e=>e.date>=inicio&&e.date<=finFecha)
+  .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+
+ const a=filteredEvents(mes,monthFilter);
+ const box=$("monthList");
+ if(!box)return;
+
+ box.innerHTML=a.length?
+  a.map(card).join(""):
+  '<div class="empty">No hay '+esc(typeLabel(monthFilter).replace(/^.*? /,""))+' previstos en este mes.</div>';
+
+ bindCards(box);
 }
 
 /* =========================
@@ -715,7 +801,7 @@ function setupFilters(){
 function renderToday(){
 
  const t=today();
- const lista=allEvents().filter(e=>e.date===t);
+ const lista=allEvents().filter(e=>e.date>=t);
 
  const citas=lista.filter(e=>e.type==="cita").length;
  const medicos=lista.filter(e=>e.type==="medico").length;
@@ -817,7 +903,7 @@ function renderNext(){
     '<div class="nextitem">'+
 
     '<div>'+
-    names[e.type]+
+    (names[e.type]||("📌 "+String(e.type||"Tipo")))+
     (e.repeat?" · ANUAL":"")+
     '</div>'+
 
@@ -917,13 +1003,13 @@ function renderCalendar(){
   '<span><i class="medico"></i>Médico</span>'+
   '<span><i class="cumple"></i>Cumple</span>'+
   '<span><i class="viaje"></i>Viaje</span>'+
-  '<span><i class="tarea"></i>Tarea</span>'+
   '</div>'
  );
 
  document.querySelectorAll(".cal[data-date]").forEach(x=>
   x.onclick=()=>{
    selected=x.dataset.date;
+   agendaDisplayMode="day";
    renderCalendar();
   }
  );
@@ -934,7 +1020,7 @@ function renderCalendar(){
 
 function renderDay(){
 
- let d=new Date(selected+"T12:00:00");
+ const d=new Date(selected+"T12:00:00");
 
  $("dayTitle").textContent=
   d.toLocaleDateString(
@@ -949,16 +1035,17 @@ function renderDay(){
 
  let a=allEvents()
   .filter(e=>e.date===selected)
-  .sort((a,b)=>
-   (a.time||"").localeCompare(b.time||"")
-  );
+  .sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+
+ /* Al seleccionar un día se muestran TODAS las anotaciones
+    previstas para ese día, independientemente del informe mensual. */
 
  $("dayList").innerHTML=a.length?
   a.map(card).join(""):
+  '<div class="empty">No hay nada previsto para este día.</div>';
 
-  '<div class="empty">'+
-  'No hay anotaciones para este día.'+
-  '</div>';
+ bindCards($("dayList"));
+ renderMonthlyReport();
 }
 
 
@@ -1160,7 +1247,12 @@ function openForm(date,e){
 
  document.body.appendChild(m);
 
- $("ft").value=e&&e.type||"cita";
+ if(e&&e.type&&!$("ft").querySelector('option[value="'+e.type+'"]')){
+  const op=document.createElement("option");
+  op.value=e.type;op.textContent="📌 "+String(e.type).replace(/^custom_/,"").replace(/_/g," ");
+  $("ft").insertBefore(op,$("ft").querySelector('option[value="__nuevo__"]'));
+}
+$("ft").value=e&&e.type||"cita";
 
  $("fp").value=e&&e.priority||"normal";
 
@@ -1180,7 +1272,28 @@ function openForm(date,e){
    "none";
  }
 
- $("ft").onchange=rep;
+ $("ft").onchange=()=>{
+  if($("ft").value==="__nuevo__"){
+    const nombre=prompt("Nombre del nuevo tipo:");
+    if(nombre&&nombre.trim()){
+      const n=nombre.trim();
+      const val="custom_"+n.toLowerCase().replace(/[^a-z0-9áéíóúüñ]+/gi,"_").replace(/^_|_$/g,"");
+      const op=document.createElement("option");
+      op.value=val;op.textContent="📌 "+n;
+      op.dataset.customName=n;
+      $("ft").insertBefore(op,$("ft").querySelector('option[value="__nuevo__"]'));
+      $("ft").value=val;
+    }else{
+      if(e&&e.type&&!$("ft").querySelector('option[value="'+e.type+'"]')){
+  const op=document.createElement("option");
+  op.value=e.type;op.textContent="📌 "+String(e.type).replace(/^custom_/,"").replace(/_/g," ");
+  $("ft").insertBefore(op,$("ft").querySelector('option[value="__nuevo__"]'));
+}
+$("ft").value=e&&e.type||"cita";
+    }
+  }
+  rep();
+};
 
  rep();
 
@@ -1380,7 +1493,7 @@ $("file").onchange=e=>{
 
 
 /* =========================
-   AVISOS AUTOMÁTICOS
+   AVISOS
 ========================= */
 
 function alertKey(){
@@ -1464,112 +1577,11 @@ function playAlertSound(){
    NOTIFICACIONES
 ========================= */
 
-function updateNotificationStatus(){
-  if(!("Notification" in window)){
-    $("notificationStatus").textContent=
-      "Este navegador no permite notificaciones.";
-    $("notificationBtn").style.display="none";
-    $("nextAlertInfo").textContent="";
-    return;
-  }
-
-  $("notificationBtn").style.display="block";
-
-  if(Notification.permission==="granted"){
-    $("notificationStatus").textContent=
-      "✅ Avisos activados. Cada día a las 14:00 se comprobará lo previsto para mañana.";
-    $("notificationBtn").textContent=
-      "✅ Avisos activados";
-  }else if(Notification.permission==="denied"){
-    $("notificationStatus").textContent=
-      "⚠️ Las notificaciones están bloqueadas. Debes permitirlas desde los ajustes del navegador.";
-    $("notificationBtn").textContent=
-      "🔔 Permitir avisos";
-  }else{
-    $("notificationStatus").textContent=
-      "Activa los avisos para recibir cada día a las 14:00 un resumen de lo previsto para mañana.";
-    $("notificationBtn").textContent=
-      "🔔 Avisos automáticos";
-  }
-
-  updateNextAlertInfo();
-}
-
-function updateNextAlertInfo(){
-  let ahora=new Date();
-  let objetivo=new Date(ahora);
-  objetivo.setHours(14,0,0,0);
-
-  if(ahora.getTime()>=objetivo.getTime()){
-    objetivo.setDate(objetivo.getDate()+1);
-  }
-
-  let ms=objetivo.getTime()-ahora.getTime();
-  let horas=Math.floor(ms/3600000);
-  let minutos=Math.floor((ms%3600000)/60000);
-
-  $("nextAlertInfo").textContent=
-    "⏰ Próxima comprobación automática: 14:00"+
-    " · faltan "+horas+" h "+minutos+" min.";
-}
-
-$("notificationBtn").onclick=async()=>{
-  if(!("Notification" in window)){
-    alert("Este navegador no permite notificaciones.");
-    return;
-  }
-
-  try{
-    let permission=await Notification.requestPermission();
-    updateNotificationStatus();
-
-    if(permission==="granted"){
-      try{
-        new Notification(
-          "📅 Mi Agenda",
-          {
-            body:"Los avisos automáticos están activados. Se comprobará la agenda a las 14:00."
-          }
-        );
-      }catch(e){}
-
-      playAlertSound();
-    }
-  }catch(e){
-    alert("No se ha podido activar el permiso de notificaciones.");
-  }
-};
-
-/* =========================
-   COMPROBAR AVISOS
-========================= */
-
-function sendBrowserNotifications(lista){
-  if(
-    !("Notification" in window)||
-    Notification.permission!=="granted"
-  )return;
-
-  try{
-    let resumen=lista.map(e=>
-      (e.time?e.time+" — ":"")+e.text
-    ).join(" · ");
-
-    new Notification(
-      "🔔 Mi Agenda — Mañana",
-      {
-        body:resumen
-      }
-    );
-  }catch(e){}
-}
-
 function checkAlerts(){
   let ahora=new Date(),
       hora=ahora.getHours(),
       minuto=ahora.getMinutes();
 
-  updateNextAlertInfo();
 
   /*
     Ventana de seguridad de 10 minutos.
@@ -1610,7 +1622,7 @@ function showTomorrowPreview(){
 
 
 /* =========================
-   AVISOS AUTOMÁTICOS ACTIVADOS
+   AVISOS POR DEFECTO
 ========================= */
 const ALERTS_ENABLED_KEY="mi_agenda_avisos_automaticos";
 if(localStorage.getItem(ALERTS_ENABLED_KEY)!=="0"){
@@ -1634,11 +1646,10 @@ window.addEventListener("focus",checkAlerts);
 
 setupFilters();
 setFilter("todayFilters",todayFilter);
-setFilter("dayFilters",dayFilter);
+setupMonthFilters();
 
 renderToday();
 renderNext();
-updateNotificationStatus();
 
 </script>
 
@@ -1646,20 +1657,206 @@ updateNotificationStatus();
 <script>
 (function(){
 const KEYA="mi_agenda_archivo_v1";
+const KEYE="mi_agenda_archivo_estructura_v1";
 const CATS=[["Coche","archivoCoche"],["Casa","archivoCasa"],["Telefonía","archivoTelefonia"],["Seguros","archivoSeguros"],["Vacaciones","archivoVacaciones"]];
+
 function getA(){try{const a=JSON.parse(localStorage.getItem(KEYA)||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}}
+function getE(){try{const x=JSON.parse(localStorage.getItem(KEYE)||'{"carpetas":[]}');return x&&Array.isArray(x.carpetas)?x:{carpetas:[]}}catch(e){return{carpetas:[]}}}
+function saveE(e){localStorage.setItem(KEYE,JSON.stringify(e))}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function uid(pref){return pref+"_"+Date.now()+"_"+Math.random().toString(36).slice(2,8)}
+
+function filasDatos(rows){
+ return rows.length
+ ?'<div class="archivoCompacto">'+rows.map(x=>`
+   <div class="archivoFila">
+     <div class="archivoTitulo">${esc(x.titulo)}</div>
+     <div class="archivoContexto">${esc(x.detalle)}</div>
+     <div>
+       <button onclick="editarArchivo('${x.id}')">✏️</button>
+       <button onclick="borrarArchivo('${x.id}')">🗑️</button>
+     </div>
+   </div>`).join("")+'</div>'
+ :'<div class="archivoVacio">Sin datos.</div>';
+}
+
+function filaNuevaHTML(tipo,ref){
+ const save=tipo==='fijo'?`guardarNuevoFijoArchivo('${ref}')`:`guardarNuevoApartadoArchivo(${ref})`;
+ const cancel=tipo==='fijo'?`cancelarNuevaLineaArchivo('${ref}')`:`cancelarNuevaLineaArchivo('custom_${ref}')`;
+ return `<div class="archivoFila archivoNueva" id="nuevaLinea_${esc(String(ref).replace(/[^a-zA-Z0-9_-]/g,'_'))}">
+   <input class="nuevoTituloArchivo" type="text" placeholder="Título del apartado" autocomplete="off">
+   <input class="nuevoContextoArchivo" type="text" placeholder="Contexto" autocomplete="off">
+   <div style="display:flex;gap:4px">
+     <button class="archivoGuardar" type="button" onclick="${save}">💾</button>
+     <button type="button" onclick="${cancel}">✖️</button>
+   </div>
+ </div>`;
+}
+
 window.renderArchivo=function(){
- const a=getA();
+ const a=getA(),e=getE();
  CATS.forEach(([cat,id])=>{
-  const b=document.getElementById(id); if(!b)return;
-  const rows=a.filter(x=>x.categoria===cat);
-  b.innerHTML=rows.length?rows.map(x=>`<div class="archivoItem"><div><div class="titulo">${esc(x.titulo)}</div><div class="detalle">${esc(x.detalle)}</div></div><div><button onclick="editarArchivo('${x.id}')">✏️</button><button onclick="borrarArchivo('${x.id}')">🗑️</button></div></div>`).join(""):'<div class="archivoVacio">Sin datos.</div>';
+  const b=document.getElementById(id);if(!b)return;
+  b.innerHTML=filasDatos(a.filter(x=>x.categoria===cat));
  });
+ const cont=document.getElementById("carpetasNuevasArchivo");
+ if(!cont)return;
+ cont.innerHTML=e.carpetas.map((c,ci)=>{
+  const aps=Array.isArray(c.apartados)?c.apartados:[];
+  return `<div class="card" style="margin-bottom:10px;">
+    <div class="carpetaCabecera">
+      <h3>📁 ${esc(c.nombre)}</h3>
+      <div>
+        <button class="archivoPlus" type="button" title="Nuevo apartado" onclick="nuevoApartadoArchivo(${ci})">+</button>
+        <button class="archivoBorrarCarpeta" type="button" title="Eliminar carpeta" onclick="borrarCarpetaArchivo(${ci})">🗑️</button>
+      </div>
+    </div>
+    <div id="carpetaLista_${ci}" class="archivoCompacto" style="margin-top:6px;">
+      ${aps.length
+       ?aps.map((item,ai)=>{
+          const obj=typeof item==='string'?{id:'legacy_'+ci+'_'+ai,titulo:item,contexto:''}:item;
+          return `<div class="archivoFila">
+            <div class="archivoTitulo">${esc(obj.titulo)}</div>
+            <div class="archivoContexto">${esc(obj.contexto||'')}</div>
+            <div>
+              <button onclick="editarApartadoArchivo(${ci},${ai})">✏️</button>
+              <button onclick="borrarApartadoArchivo(${ci},${ai})">🗑️</button>
+            </div>
+          </div>`;
+        }).join("")
+       :'<div class="archivoVacio">Sin apartados.</div>'}
+    </div>
+  </div>`;
+ }).join("");
 };
-window.editarArchivo=function(id){const a=getA(),x=a.find(z=>z.id===id);if(!x)return;const t=prompt("Dato:",x.titulo);if(t===null)return;const d=prompt("Detalle:",x.detalle||"");if(d===null)return;x.titulo=t;x.detalle=d;localStorage.setItem(KEYA,JSON.stringify(a));renderArchivo()};
-window.borrarArchivo=function(id){if(!confirm("¿Eliminar este dato?"))return;localStorage.setItem(KEYA,JSON.stringify(getA().filter(x=>x.id!==id)));renderArchivo()};
-document.addEventListener("DOMContentLoaded",renderArchivo);
+
+function abrirLineaNueva(contenedorId,tipo,ref){
+ const cont=document.getElementById(contenedorId);if(!cont)return;
+ if(cont.querySelector('.archivoNueva'))return;
+ const vacio=cont.querySelector('.archivoVacio');if(vacio)vacio.remove();
+ cont.insertAdjacentHTML('beforeend',filaNuevaHTML(tipo,ref));
+ const row=cont.querySelector('.archivoNueva');
+ if(row){const input=row.querySelector('.nuevoTituloArchivo');input.focus();input.addEventListener('keydown',ev=>{if(ev.key==='Enter')document.querySelector('#'+CSS.escape(row.id)+' .archivoGuardar')?.click();if(ev.key==='Escape')row.remove()})}
+}
+
+window.nuevoApartadoFijoArchivo=function(nombreCarpeta){
+ const mapa={Coche:'archivoCoche',Casa:'archivoCasa','Telefonía':'archivoTelefonia',Seguros:'archivoSeguros',Vacaciones:'archivoVacaciones'};
+ abrirLineaNueva(mapa[nombreCarpeta],'fijo',nombreCarpeta);
+};
+
+window.guardarNuevoFijoArchivo=function(nombreCarpeta){
+ const mapa={Coche:'archivoCoche',Casa:'archivoCasa','Telefonía':'archivoTelefonia',Seguros:'archivoSeguros',Vacaciones:'archivoVacaciones'};
+ const cont=document.getElementById(mapa[nombreCarpeta]);if(!cont)return;
+ const row=cont.querySelector('.archivoNueva');if(!row)return;
+ const t=row.querySelector('.nuevoTituloArchivo').value.trim();
+ const d=row.querySelector('.nuevoContextoArchivo').value.trim();
+ if(!t){row.querySelector('.nuevoTituloArchivo').focus();return}
+ const a=getA();
+ if(a.some(x=>x.categoria===nombreCarpeta && String(x.titulo||'').toLowerCase()===t.toLowerCase())){alert('Ese apartado ya existe en esta carpeta.');return}
+ a.push({id:uid('archivo'),categoria:nombreCarpeta,titulo:t,detalle:d});
+ localStorage.setItem(KEYA,JSON.stringify(a));renderArchivo();
+};
+
+window.nuevaCarpetaArchivo=function(){
+ const nombre=prompt("Nombre de la nueva carpeta:");
+ if(nombre===null)return;
+ const n=nombre.trim();if(!n)return;
+ const e=getE();
+ if(e.carpetas.some(c=>String(c.nombre).toLowerCase()===n.toLowerCase())){alert("Esa carpeta ya existe.");return;}
+ e.carpetas.push({id:uid('carpeta'),nombre:n,apartados:[]});
+ saveE(e);renderArchivo();
+};
+
+window.borrarCarpetaArchivo=function(ci){
+ const e=getE();if(!e.carpetas[ci])return;
+ const c=e.carpetas[ci];
+ if(!confirm('¿Eliminar la carpeta "'+c.nombre+'" y todos sus apartados?'))return;
+ e.carpetas.splice(ci,1);saveE(e);renderArchivo();
+};
+
+window.nuevoApartadoArchivo=function(ci){
+ const e=getE();if(!e.carpetas[ci])return;
+ abrirLineaNueva('carpetaLista_'+ci,'custom',ci);
+};
+
+window.guardarNuevoApartadoArchivo=function(ci){
+ const e=getE();if(!e.carpetas[ci])return;
+ const cont=document.getElementById('carpetaLista_'+ci);if(!cont)return;
+ const row=cont.querySelector('.archivoNueva');if(!row)return;
+ const t=row.querySelector('.nuevoTituloArchivo').value.trim();
+ const d=row.querySelector('.nuevoContextoArchivo').value.trim();
+ if(!t){row.querySelector('.nuevoTituloArchivo').focus();return}
+ const aps=e.carpetas[ci].apartados=e.carpetas[ci].apartados||[];
+ const normalizados=aps.map(x=>typeof x==='string'?{id:uid('apartado'),titulo:x,contexto:''}:x);
+ if(normalizados.some(x=>String(x.titulo||'').toLowerCase()===t.toLowerCase())){alert('Ese apartado ya existe en esta carpeta.');return}
+ normalizados.push({id:uid('apartado'),titulo:t,contexto:d});
+ e.carpetas[ci].apartados=normalizados;saveE(e);renderArchivo();
+};
+
+window.cancelarNuevaLineaArchivo=function(ref){
+ let row;
+ if(String(ref).startsWith('custom_')){
+   const ci=String(ref).slice(7);const cont=document.getElementById('carpetaLista_'+ci);row=cont&&cont.querySelector('.archivoNueva');
+ }else{
+   const mapa={Coche:'archivoCoche',Casa:'archivoCasa','Telefonía':'archivoTelefonia',Seguros:'archivoSeguros',Vacaciones:'archivoVacaciones'};
+   const cont=document.getElementById(mapa[ref]);row=cont&&cont.querySelector('.archivoNueva');
+ }
+ if(row)row.remove();
+};
+
+window.editarApartadoArchivo=function(ci,ai){
+ const e=getE();if(!e.carpetas[ci]||!e.carpetas[ci].apartados[ai])return;
+ const item=e.carpetas[ci].apartados[ai];
+ const obj=typeof item==='string'?{id:uid('apartado'),titulo:item,contexto:''}:item;
+ const cont=document.getElementById('carpetaLista_'+ci);if(!cont)return;
+ const rows=cont.querySelectorAll('.archivoFila:not(.archivoNueva)');
+ const row=rows[ai];if(!row)return;
+ row.innerHTML=`<input class="nuevoTituloArchivo" type="text" value="${esc(obj.titulo)}" autocomplete="off">
+   <input class="nuevoContextoArchivo" type="text" value="${esc(obj.contexto||'')}" autocomplete="off">
+   <div style="display:flex;gap:4px"><button type="button" onclick="guardarEdicionApartadoArchivo(${ci},${ai})">💾</button><button type="button" onclick="renderArchivo()">✖️</button></div>`;
+ row.querySelector('.nuevoTituloArchivo').focus();
+};
+
+window.guardarEdicionApartadoArchivo=function(ci,ai){
+ const e=getE();if(!e.carpetas[ci])return;
+ const cont=document.getElementById('carpetaLista_'+ci);const rows=cont&&cont.querySelectorAll('.archivoFila:not(.archivoNueva)');const row=rows&&rows[ai];if(!row)return;
+ const t=row.querySelector('.nuevoTituloArchivo').value.trim();const d=row.querySelector('.nuevoContextoArchivo').value.trim();if(!t)return;
+ const aps=e.carpetas[ci].apartados=e.carpetas[ci].apartados||[];
+ const old=typeof aps[ai]==='string'?{id:uid('apartado')}:aps[ai];
+ aps[ai]={id:old.id||uid('apartado'),titulo:t,contexto:d};saveE(e);renderArchivo();
+};
+
+window.borrarApartadoArchivo=function(ci,ai){
+ const e=getE();if(!e.carpetas[ci]||!e.carpetas[ci].apartados[ai])return;
+ if(!confirm("¿Eliminar este apartado?"))return;
+ e.carpetas[ci].apartados.splice(ai,1);saveE(e);renderArchivo();
+};
+
+window.editarArchivo=function(id){
+ const a=getA(),x=a.find(z=>z.id===id);if(!x)return;
+ const row=[...document.querySelectorAll('.archivoFila')].find(r=>r.querySelector(`button[onclick="editarArchivo('${id}')"]`));
+ if(!row)return;
+ row.innerHTML=`<input class="nuevoTituloArchivo" type="text" value="${esc(x.titulo)}" autocomplete="off">
+   <input class="nuevoContextoArchivo" type="text" value="${esc(x.detalle||'')}" autocomplete="off">
+   <div style="display:flex;gap:4px"><button type="button" onclick="guardarEdicionArchivo('${id}')">💾</button><button type="button" onclick="renderArchivo()">✖️</button></div>`;
+ row.querySelector('.nuevoTituloArchivo').focus();
+};
+window.guardarEdicionArchivo=function(id){
+ const a=getA(),x=a.find(z=>z.id===id);if(!x)return;
+ const row=[...document.querySelectorAll('.archivoFila')].find(r=>r.querySelector(`button[onclick="guardarEdicionArchivo('${id}')"]`));if(!row)return;
+ const t=row.querySelector('.nuevoTituloArchivo').value.trim(),d=row.querySelector('.nuevoContextoArchivo').value.trim();if(!t)return;
+ x.titulo=t;x.detalle=d;localStorage.setItem(KEYA,JSON.stringify(a));renderArchivo();
+};
+window.borrarArchivo=function(id){
+ if(!confirm("¿Eliminar este dato?"))return;
+ localStorage.setItem(KEYA,JSON.stringify(getA().filter(x=>x.id!==id)));renderArchivo();
+};
+
+document.addEventListener("DOMContentLoaded",function(){
+ const btn=document.getElementById("nuevaCarpetaArchivoBtn");
+ if(btn)btn.onclick=nuevaCarpetaArchivo;
+ renderArchivo();
+});
 })();
 </script>
 
@@ -1701,7 +1898,9 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
     if(typeof renderCalendar==="function")renderCalendar();
   };
 
-  // Add annual occurrences to allEvents without modifying the original event array.
+  // Añade cumpleaños anuales y elimina duplicados antes de que lleguen a la interfaz.
+  // Un mismo cumpleaños se considera duplicado si coincide en nombre + día + mes,
+  // aunque proceda de dos fuentes distintas (evento repetitivo y base anual).
   const originalAllEvents=window.allEvents;
   if(typeof originalAllEvents==="function"){
     window.allEvents=function(){
@@ -1714,7 +1913,18 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
         type:"cumple",
         annual:true
       }));
-      return base.concat(annual);
+
+      const combined=base.concat(annual);
+      const seen=new Set();
+      return combined.filter(e=>{
+        if(e.type!=="cumple")return true;
+        const nombre=String(e.title||e.text||"").trim().toLowerCase().replace(/\s+/g," ");
+        const fecha=String(e.date||"");
+        const clave=nombre+"|"+fecha.slice(5,10);
+        if(seen.has(clave))return false;
+        seen.add(clave);
+        return true;
+      });
     };
   }
 
@@ -1724,15 +1934,6 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
     function toggle(){if(wrap)wrap.style.display=(type&&type.value==="cumple")?"block":"none"}
     if(type){type.addEventListener("change",toggle);toggle()}
 
-    // Inform the user of the feature without changing existing data.
-    const panel=document.getElementById("agenda");
-    if(panel && !document.getElementById("birthdayAnnualInfo")){
-      const info=document.createElement("div");
-      info.id="birthdayAnnualInfo";
-      info.className="birthdayInfo";
-      info.innerHTML='<strong>🎂 Cumpleaños anuales</strong><br>Los cumpleaños guardados como anuales aparecerán automáticamente todos los años.';
-      panel.insertBefore(info,panel.firstChild);
-    }
   });
 })();
 </script>
@@ -1752,63 +1953,92 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
   }
   function saveEventsTarea(a){localStorage.setItem("mi_agenda_v5",JSON.stringify(a))}
 
+  function fechaLocal(){
+    const d=new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+
+  function nombreTarea(x){return String(x.text??x.title??"");}
+
   window.nuevaTareaAgenda=function(){
     const titulo=prompt("¿Qué tarea quieres añadir?");
     if(!titulo)return;
-    const fecha=prompt("Fecha (AAAA-MM-DD). Déjala vacía para hoy:",new Date().toISOString().slice(0,10));
-    const f=fecha||new Date().toISOString().slice(0,10);
+    const fecha=prompt("Fecha (AAAA-MM-DD). Déjala vacía para hoy:",fechaLocal());
+    const f=fecha||fechaLocal();
     if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){alert("Fecha no válida.");return}
     const a=getEventsTarea();
-    a.push({id:"tarea_"+Date.now(),date:f,title:titulo,type:"tarea",done:false});
+    a.push({id:"tarea_"+Date.now(),date:f,text:titulo,title:titulo,type:"tarea",done:false,priority:"normal",note:"",time:"",repeat:false});
     saveEventsTarea(a);
-    if(typeof renderAll==="function")renderAll();
     renderTareasAgenda();
+    if(typeof renderToday==="function")renderToday();
+    if(typeof renderNext==="function")renderNext();
+    if(typeof renderCalendar==="function")renderCalendar();
   };
 
   window.toggleTarea=function(id){
-    const a=getEventsTarea(),x=a.find(e=>e.id===id);
+    const a=getEventsTarea(),x=a.find(e=>String(e.id)===String(id));
     if(!x)return;
     x.done=!x.done;
+    if(!x.text&&x.title)x.text=x.title;
+    if(!x.title&&x.text)x.title=x.text;
     saveEventsTarea(a);
-    if(typeof renderAll==="function")renderAll();
     renderTareasAgenda();
+    if(typeof renderToday==="function")renderToday();
+    if(typeof renderCalendar==="function")renderCalendar();
   };
 
   window.editarTarea=function(id){
-    const a=getEventsTarea(),x=a.find(e=>e.id===id);
+    const a=getEventsTarea(),x=a.find(e=>String(e.id)===String(id));
     if(!x)return;
-    const t=prompt("Tarea:",x.title);
+    const t=prompt("Tarea:",nombreTarea(x));
     if(t===null)return;
-    const f=prompt("Fecha (AAAA-MM-DD):",x.date||"");
+    const f=prompt("Fecha (AAAA-MM-DD):",x.date||fechaLocal());
     if(f===null)return;
-    x.title=t;x.date=f;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){alert("Fecha no válida.");return}
+    x.text=t;x.title=t;x.date=f;
     saveEventsTarea(a);
-    if(typeof renderAll==="function")renderAll();
     renderTareasAgenda();
+    if(typeof renderToday==="function")renderToday();
+    if(typeof renderCalendar==="function")renderCalendar();
   };
 
   window.borrarTarea=function(id){
     if(!confirm("¿Eliminar esta tarea?"))return;
-    saveEventsTarea(getEventsTarea().filter(e=>e.id!==id));
-    if(typeof renderAll==="function")renderAll();
+    saveEventsTarea(getEventsTarea().filter(e=>String(e.id)!==String(id)));
     renderTareasAgenda();
+    if(typeof renderToday==="function")renderToday();
+    if(typeof renderCalendar==="function")renderCalendar();
   };
 
   window.filtrarTareasAgenda=function(f){
-    filtroTareas=f;renderTareasAgenda();
+    filtroTareas=f;
+    renderTareasAgenda();
   };
 
   window.renderTareasAgenda=function(){
     const box=document.getElementById("listaTareasAgenda");
     if(!box)return;
+    const hoy=fechaLocal();
+    const anio=hoy.slice(0,4);
     let rows=getEventsTarea().filter(e=>e.type==="tarea");
-    if(filtroTareas==="pendientes")rows=rows.filter(e=>!e.done);
-    rows.sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+
+    /* PENDIENTES: solo tareas no realizadas desde hoy en adelante. */
+    if(filtroTareas==="pendientes")rows=rows.filter(e=>!e.done && (e.date||"")>=hoy);
+
+    /* TODAS: todas las tareas del año actual, estén realizadas o no. */
+    if(filtroTareas==="todas")rows=rows.filter(e=>String(e.date||"").slice(0,4)===anio);
+
+    rows.sort((a,b)=>((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||"")));
+
     if(!rows.length){
-      box.innerHTML='<div class="archivoVacio">No hay tareas '+(filtroTareas==="pendientes"?"pendientes.":"registradas.")+'</div>';
+      box.innerHTML='<div class="archivoVacio">'+
+        (filtroTareas==="pendientes"
+          ?"No hay tareas pendientes desde hoy en adelante."
+          :"No hay tareas registradas en el año "+anio+".")+
+        '</div>';
       return;
     }
-    const hoy=new Date().toISOString().slice(0,10);
+
     box.innerHTML=rows.map(x=>{
       const overdue=!x.done && x.date && x.date<hoy;
       const today=!x.done && x.date===hoy;
@@ -1816,9 +2046,9 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
       const meta=x.date?`<div class="taskMeta ${overdue?"taskOverdue":today?"taskToday":""}">${overdue?"⚠️ Vencida · ":today?"📌 Hoy · ":""}${tareaEsc(x.date)}</div>`:"";
       return `<div class="archivoItem ${cls}">
         <div class="taskRow">
-          <input class="taskCheck" type="checkbox" ${x.done?"checked":""} onchange="toggleTarea('${x.id}')">
-          <div><div class="titulo">${tareaEsc(x.title)}</div>${meta}</div>
-          <div class="taskActions"><button onclick="editarTarea('${x.id}')">✏️</button><button onclick="borrarTarea('${x.id}')">🗑️</button></div>
+          <input class="taskCheck" type="checkbox" ${x.done?"checked":""} onchange="toggleTarea('${tareaEsc(x.id)}')">
+          <div><div class="titulo">${tareaEsc(nombreTarea(x))}</div>${meta}</div>
+          <div class="taskActions"><button onclick="editarTarea('${tareaEsc(x.id)}')">✏️</button><button onclick="borrarTarea('${tareaEsc(x.id)}')">🗑️</button></div>
         </div>
       </div>`;
     }).join("");
@@ -2065,5 +2295,8 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
   });
 })();
 </script>
+
+
+
 </body>
 </html>
