@@ -1968,131 +1968,100 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
 
 <script>
 (function(){
-  function archivoNormalizado(data){
+  function normalizarArchivo(data){
     let rows=null;
 
-    /* Copia completa nueva de Mi Agenda */
+    /* Copia nueva completa */
     if(data && typeof data==="object" && !Array.isArray(data)){
-      if(Array.isArray(data.archivo)){
-        rows=data.archivo;
-      }
-      /* FORMATO ORIGINAL mi_archivo_YYYY-MM-DD.json:
-         { version, categories, records:[{id,category,title,details}] } */
-      else if(Array.isArray(data.records)){
-        rows=data.records;
-      }
+      if(Array.isArray(data.archivo)) rows=data.archivo;
+      else if(Array.isArray(data.records)) rows=data.records;
     }
 
-    /* Copia antigua si fuera directamente un array */
-    if(Array.isArray(data)){
-      rows=data;
-    }
+    /* Copia antigua directamente como array */
+    if(Array.isArray(data)) rows=data;
 
-    if(!rows)throw new Error("No se encontró información de ARCHIVO.");
+    if(!rows) throw new Error("No se encontraron registros de ARCHIVO.");
 
-    return rows.map((x,i)=>{
-      x=x||{};
-
-      const categoria=x.categoria||x.category||x.grupo||x.seccion||"Otros";
-      const titulo=x.titulo||x.title||x.nombre||x.concepto||x.campo||("Dato "+(i+1));
-      const detalle=x.detalle||x.details||x.descripcion||x.valor||x.texto||x.dato||"";
-
-      /* Si viene del formato original, category es el ID:
-         coche, casa, telefonia, seguros, vacaciones.
-         Lo convertimos al nombre visible. */
-      const nombres={
-        coche:"Coche",
-        casa:"Casa",
-        telefonia:"Telefonía",
-        seguros:"Seguros",
-        vacaciones:"Vacaciones"
-      };
-
-      return {
-        id:String(x.id||("archivo_"+Date.now()+"_"+i)),
-        categoria:nombres[String(categoria).toLowerCase()]||String(categoria),
-        titulo:String(titulo),
-        detalle:String(detalle)
-      };
-    });
-  }
-
-    /* Copia antigua: el propio array de Archivo */
-    if(Array.isArray(data)){
-      rows=data;
-    }
-
-    if(!rows)throw new Error("No se encontró información de ARCHIVO.");
-
-    return rows.map((x,i)=>{
-      x=x||{};
-      return {
-        id:String(x.id||("archivo_"+Date.now()+"_"+i)),
-        categoria:String(
-          x.categoria||x.category||x.grupo||x.seccion||"Otros"
-        ),
-        titulo:String(
-          x.titulo||x.nombre||x.title||x.concepto||x.campo||("Dato "+(i+1))
-        ),
-        detalle:String(
-          x.detalle||x.descripcion||x.valor||x.texto||x.dato||""
-        )
-      };
-    });
-  }
-
-  window.importarCopiaArchivo=function(file){
-    const reader=new FileReader();
-    reader.onload=function(){
-      try{
-        const data=JSON.parse(reader.result);
-        const rows=archivoNormalizado(data);
-
-        if(!rows.length){
-          alert("La copia de ARCHIVO no contiene datos.");
-          return;
-        }
-
-        const categorias=[...new Set(rows.map(x=>x.categoria))];
-        const mensaje=
-          "Se han encontrado "+rows.length+" datos de ARCHIVO."+
-          "\\n\\nCategorías: "+categorias.join(", ")+
-          "\\n\\nSe sustituirá el contenido actual de ARCHIVO."+
-          "\\nLa AGENDA no se modificará."+
-          "\\n\\n¿Continuar?";
-
-        if(!confirm(mensaje))return;
-
-        localStorage.setItem(
-          "mi_agenda_archivo_v1",
-          JSON.stringify(rows)
-        );
-
-        const estado=document.getElementById("estadoImportArchivo");
-        if(estado)estado.textContent="✓ Archivo restaurado correctamente. Recargando…";
-
-        setTimeout(function(){location.reload()},600);
-      }catch(e){
-        alert(
-          "No se ha podido cargar la copia de ARCHIVO.\\n\\n"+
-          "Comprueba que sea un archivo JSON de Mi Agenda."
-        );
-      }
+    const nombres={
+      coche:"Coche",
+      casa:"Casa",
+      telefonia:"Telefonía",
+      seguros:"Seguros",
+      vacaciones:"Vacaciones"
     };
-    reader.readAsText(file);
-  };
+
+    return rows.map(function(x,i){
+      x=x||{};
+      const cat=x.categoria||x.category||x.grupo||"Otros";
+      return {
+        id:String(x.id||("archivo_"+Date.now()+"_"+i)),
+        categoria:nombres[String(cat).toLowerCase()]||String(cat),
+        titulo:String(x.titulo||x.title||x.nombre||("Dato "+(i+1))),
+        detalle:String(x.detalle||x.details||x.descripcion||x.valor||"")
+      };
+    });
+  }
+
+  function abrirSelectorArchivo(){
+    const input=document.getElementById("archivoBackupFile");
+    if(input) input.click();
+  }
 
   document.addEventListener("DOMContentLoaded",function(){
-    const btn=document.getElementById("importArchivoBtn");
+    const boton=document.getElementById("importArchivoBtn");
     const input=document.getElementById("archivoBackupFile");
-    if(btn&&input){
-      btn.onclick=function(){input.click()};
-      input.onchange=function(){
-        if(input.files&&input.files[0]){
-          importarCopiaArchivo(input.files[0]);
+
+    if(!boton||!input)return;
+
+    boton.onclick=abrirSelectorArchivo;
+
+    input.onchange=function(){
+      const file=input.files && input.files[0];
+      if(!file)return;
+
+      const reader=new FileReader();
+
+      reader.onload=function(){
+        try{
+          const data=JSON.parse(reader.result);
+          const rows=normalizarArchivo(data);
+
+          if(!rows.length){
+            alert("La copia de ARCHIVO no contiene datos.");
+            return;
+          }
+
+          if(!confirm(
+            "Se han encontrado "+rows.length+
+            " datos de ARCHIVO.\\n\\n"+
+            "Se cargarán en ARCHIVO.\\n"+
+            "La AGENDA no se modificará.\\n\\n"+
+            "¿Continuar?"
+          ))return;
+
+          localStorage.setItem(
+            "mi_agenda_archivo_v1",
+            JSON.stringify(rows)
+          );
+
+          const estado=document.getElementById("estadoImportArchivo");
+          if(estado)
+            estado.textContent="✓ Copia de ARCHIVO cargada correctamente.";
+
+          setTimeout(function(){
+            location.reload();
+          },500);
+
+        }catch(e){
+          alert(
+            "No se ha podido cargar la copia de ARCHIVO.\\n\\n"+
+            "Selecciona el archivo JSON de copia de ARCHIVO."
+          );
         }
       };
-    }
+
+      reader.readAsText(file);
+    };
   });
 })();
 </script>
