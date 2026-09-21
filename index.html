@@ -31,7 +31,7 @@ label{font-size:.75rem;color:var(--sub)}
 .cal.sel{background:var(--a);color:#000;font-weight:bold}
 .dot{position:absolute;bottom:3px;left:0;right:0;font-size:.55rem;white-space:nowrap;overflow:hidden}
 .event{background:var(--item);border-left:4px solid var(--a);border-radius:7px;padding:9px;margin-bottom:7px}
-.cita{border-color:var(--blue)}.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.cumple{border-color:var(--pink)}
+.cita{border-color:var(--blue)}.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.tarea{border-color:#b388ff}.event.done{opacity:.58}.taskDone{text-decoration:line-through;color:#888}.priority{display:inline-block;padding:2px 5px;border:1px solid var(--bor);border-radius:4px;margin-left:5px;font-size:.6rem}.priority.high{color:#ff8a8a}.priority.low{color:#7ddfff}.priority.normal{color:#ccc}.cumple{border-color:var(--pink)}
 .etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}
 .edate{font-size:.7rem;color:var(--sub)}
 .etext{font-size:.9rem;margin:3px 0}
@@ -201,9 +201,13 @@ const KEY="mi_agenda_v5";
 let events=[];
 
 try{
- let raw=localStorage.getItem(KEY);
- let parsed=raw?JSON.parse(raw):[];
- events=Array.isArray(parsed)?parsed:[];
+ events=JSON.parse(localStorage.getItem(KEY)||"[]");
+ if(!Array.isArray(events))events=[];
+ events=events.map(e=>
+  e&&e.type==="tarea"
+   ?{...e,done:!!e.done,priority:e.priority||"normal"}
+   :e
+ );
 }catch(e){
  events=[];
 }
@@ -252,13 +256,7 @@ function addDays(dateString,days){
 
 
 function save(){
- try{
-  localStorage.setItem(KEY,JSON.stringify(events));
-  return true;
- }catch(e){
-  console.error("No se pudo guardar Mi Agenda",e);
-  return false;
- }
+ localStorage.setItem(KEY,JSON.stringify(events));
 }
 
 
@@ -278,6 +276,7 @@ function fmt(s){
 const names={
  cita:"🔵 Cita",
  cumple:"🎂 Cumpleaños",
+ tarea:"📌 Tarea",
  medico:"🩺 Médico",
  viaje:"✈️ Viaje"
 };
@@ -303,7 +302,6 @@ function showTab(n){
 
  if(n==="agenda"){
   renderCalendar();
-  renderDay();
  }
 }
 
@@ -351,6 +349,7 @@ function icon(type){
 
  return type==="cita"?"🔵":
         type==="cumple"?"🎂":
+        type==="tarea"?"📌":
         type==="medico"?"🩺":
         "✈️";
 }
@@ -358,11 +357,26 @@ function icon(type){
 
 function card(e){
 
- return '<div class="event '+e.type+'" data-id="'+esc(e.id)+'">'+
+ let tarea=e.type==="tarea";
+ let prioridad=tarea?(
+  '<span class="priority '+(e.priority||"normal")+'">'+
+  (e.priority==="high"?"ALTA":
+   e.priority==="low"?"BAJA":"NORMAL")+
+  '</span>'
+ ):"";
+
+ let completar=tarea?
+  '<button class="completeBtn" data-complete="'+esc(e.id)+'">'+
+  (e.done?"↩️ Pendiente":"✅ Realizada")+
+  '</button>':
+  "";
+
+ return '<div class="event '+e.type+(e.done?" done":"")+'" data-id="'+esc(e.id)+'">'+
 
  '<div class="etype">'+
  names[e.type]+
  (e.repeat?" · ANUAL":"")+
+ prioridad+
  '</div>'+
 
  '<div class="edate">'+
@@ -370,7 +384,7 @@ function card(e){
  fmt(e.date)+
  '</div>'+
 
- '<div class="etext">'+
+ '<div class="etext '+(e.done?"taskDone":"")+'">'+
  esc(e.text)+
  '</div>'+
 
@@ -381,15 +395,13 @@ function card(e){
   '')+
 
  '<div class="actions">'+
-
+ completar+
  '<button class="editBtn" data-id="'+esc(e.id)+'">'+
  '✏️ Editar'+
  '</button>'+
-
  '<button class="deleteBtn" data-id="'+esc(e.id)+'">'+
  '🗑️ Borrar'+
  '</button>'+
-
  '</div></div>';
 }
 
@@ -418,9 +430,31 @@ function renderToday(){
    (a.time||"").localeCompare(b.time||"")
   );
 
- $("todayList").innerHTML=a.length?
-  a.map(card).join(""):
+ let pendientes=a.filter(e=>e.type==="tarea"&&!e.done);
+ let hechas=a.filter(e=>e.type==="tarea"&&e.done);
+ let normales=a.filter(e=>e.type!=="tarea");
 
+ let html="";
+
+ if(pendientes.length){
+  html+=
+   '<div class="sectionTitle">📌 TAREAS PENDIENTES</div>'+
+   pendientes.map(card).join("");
+ }
+
+ if(normales.length){
+  html+=
+   '<div class="sectionTitle">📅 AGENDA DE HOY</div>'+
+   normales.map(card).join("");
+ }
+
+ if(hechas.length){
+  html+=
+   '<div class="sectionTitle">✅ TAREAS COMPLETADAS</div>'+
+   hechas.map(card).join("");
+ }
+
+ $("todayList").innerHTML=html||
   '<div class="empty">'+
   'No tienes nada previsto para hoy. 👍'+
   '</div>';
@@ -661,6 +695,24 @@ $("dayNew").onclick=()=>
 
 document.addEventListener("click",function(e){
 
+ let c=e.target.closest(".completeBtn");
+
+ if(c){
+  let x=events.find(a=>
+   String(a.id)===String(c.getAttribute("data-complete"))
+  );
+
+  if(x&&x.type==="tarea"){
+   x.done=!x.done;
+   save();
+   renderToday();
+   renderNext();
+   renderCalendar();
+  }
+
+  return;
+ }
+
  let b=e.target.closest(".editBtn,.deleteBtn");
 
  if(!b)return;
@@ -789,12 +841,21 @@ function openForm(date,e){
 
  $("ft").value=e&&e.type||"cita";
 
+ $("fp").value=e&&e.priority||"normal";
+
+ $("fdone").checked=!!(e&&e.done);
+
 
  function rep(){
 
   $("rl").style.display=
    $("ft").value==="cumple"?
    "flex":
+   "none";
+
+  $("taskOptions").style.display=
+   $("ft").value==="tarea"?
+   "block":
    "none";
  }
 
@@ -846,7 +907,16 @@ function openForm(date,e){
 
    repeat:
     $("ft").value==="cumple"&&
-    $("fr").checked
+    $("fr").checked,
+
+   done:
+    $("ft").value==="tarea"&&
+    $("fdone").checked,
+
+   priority:
+    $("ft").value==="tarea"?
+    $("fp").value:
+    "normal"
   };
 
 
@@ -957,15 +1027,11 @@ $("file").onchange=e=>{
    if(!Array.isArray(d.events))
     throw 0;
 
-   events=d.events.map(e=>({
-    id:e.id??Date.now(),
-    type:e.type||"cita",
-    date:e.date||today(),
-    time:e.time||"",
-    text:e.text||"",
-    note:e.note||"",
-    repeat:!!e.repeat
-   }));
+   events=d.events.map(e=>
+    e&&e.type==="tarea"
+     ?{...e,done:!!e.done,priority:e.priority||"normal"}
+     :e
+   );
 
    save();
 
@@ -1267,19 +1333,22 @@ function checkAlerts(){
 
 checkAlerts();
 
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden){
+  checkAlerts();
+  renderToday();
+ }
+});
+
+window.addEventListener("focus",checkAlerts);
+
 renderToday();
 
 renderNext();
 
+renderCalendar();
+
 updateNotificationStatus();
-
-// Comprobamos avisos al volver a la pestaña o ventana, sin mantener
-// un temporizador cada 30 segundos que obligue al navegador a trabajar.
-document.addEventListener("visibilitychange",()=>{
- if(!document.hidden)checkAlerts();
-});
-
-window.addEventListener("focus",checkAlerts);
 
 </script>
 
