@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Mi Agenda v6.1 corregida</title>
+<title>Mi Agenda v7.1 — Apariencia</title>
 <meta name="theme-color" content="#121212">
 <style>
 :root{--bg:#121212;--card:#1e1e1e;--item:#252525;--inp:#2a2a2a;--a:#00e676;--txt:#fff;--sub:#aaa;--bor:#333;--red:#ff5252;--blue:#29b6f6;--yel:#ffd740;--pink:#ff80ab}
@@ -26,20 +26,57 @@ textarea{min-height:75px}
 label{font-size:.75rem;color:var(--sub)}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
 .week{font-size:.65rem;color:var(--sub);padding:5px}
-.cal{height:48px;background:var(--item);border-radius:6px;padding:7px 2px;position:relative;cursor:pointer;font-size:.8rem}
-.cal.today{border:1px solid var(--a)}
-.cal.sel{background:var(--a);color:#000;font-weight:bold}
-.dot{position:absolute;bottom:3px;left:0;right:0;font-size:.55rem;white-space:nowrap;overflow:hidden}
+.cal{height:52px;background:var(--item);border-radius:7px;padding:6px 3px;position:relative;cursor:pointer;font-size:.8rem;transition:.15s;overflow:hidden}
+.cal:hover{border-color:#555;transform:translateY(-1px)}
+.cal.today{border:2px solid var(--a)}
+.cal.sel{background:var(--a);color:#000;font-weight:bold;box-shadow:0 0 0 2px #00e67655}
+.cal.hasEvents{box-shadow:inset 0 -3px 0 #555}
+.cal .daynum{font-weight:bold}
+.cal.sel .daynum{font-size:.9rem}
+.dot{position:absolute;bottom:3px;left:3px;right:3px;display:flex;justify-content:center;gap:3px;height:7px;overflow:hidden}
+.dot i{width:6px;height:6px;border-radius:50%;display:block}
+.dot i.cita{background:var(--blue)}
+.dot i.medico{background:var(--red)}
+.dot i.cumple{background:var(--pink)}
+.dot i.viaje{background:var(--yel)}
+.dot i.tarea{background:#b388ff}
+.calCount{position:absolute;top:3px;right:4px;min-width:14px;height:14px;padding:0 3px;border-radius:8px;background:#444;color:#fff;font-size:.55rem;line-height:14px;font-weight:bold}
+.cal.sel .calCount{background:#000;color:#fff}
+.calendarLegend{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:8px;color:var(--sub);font-size:.62rem}
+.calendarLegend span{display:flex;align-items:center;gap:4px}
+.calendarLegend i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.calendarLegend .cita{background:var(--blue)}
+.calendarLegend .medico{background:var(--red)}
+.calendarLegend .cumple{background:var(--pink)}
+.calendarLegend .viaje{background:var(--yel)}
+.calendarLegend .tarea{background:#b388ff}
 .event{background:var(--item);border-left:4px solid var(--a);border-radius:7px;padding:9px;margin-bottom:7px}
-.cita{border-color:var(--blue)}.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.tarea{border-color:#b388ff}.event.done{opacity:.58}.taskDone{text-decoration:line-through;color:#888}.priority{display:inline-block;padding:2px 5px;border:1px solid var(--bor);border-radius:4px;margin-left:5px;font-size:.6rem}.priority.high{color:#ff8a8a}.priority.low{color:#7ddfff}.priority.normal{color:#ccc}.cumple{border-color:var(--pink)}.sectionTitle{font-size:.68rem;color:var(--sub);margin:8px 0 5px;text-transform:uppercase;font-weight:bold}
+.cita{border-color:var(--blue);background:#17242b}
+.cita .etype{color:var(--blue)}
+.cita .edate{font-size:.82rem;color:#fff;font-weight:bold}
+.cita .etext{font-size:1rem;font-weight:bold}
+.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.tarea{border-color:#b388ff}.event.done{opacity:.58}.taskDone{text-decoration:line-through;color:#888}.priority{display:inline-block;padding:2px 5px;border:1px solid var(--bor);border-radius:4px;margin-left:5px;font-size:.6rem}.priority.high{color:#ff8a8a}.priority.low{color:#7ddfff}.priority.normal{color:#ccc}.cumple{border-color:var(--pink)}.sectionTitle{font-size:.68rem;color:var(--sub);margin:8px 0 5px;text-transform:uppercase;font-weight:bold}
 .etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}
 .edate{font-size:.7rem;color:var(--sub)}
 .etext{font-size:.9rem;margin:3px 0}
+.citatime{display:inline-block;color:var(--blue);font-size:1rem;font-weight:bold;margin-right:7px}
+.citalabel{font-size:.68rem;color:var(--sub);text-transform:uppercase}
+.filterbar{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}
+.filterbar button{flex:1;white-space:nowrap;background:#252525;color:#aaa;border:1px solid var(--bor);border-radius:7px;padding:8px 7px;font-size:.7rem}
+.filterbar button.active{background:var(--blue);color:#000;font-weight:bold}
 .empty{text-align:center;color:var(--sub);padding:18px;font-size:.8rem}
 .actions{display:flex;gap:7px;margin-top:7px}
 .actions button{background:#333;color:#fff;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;font-size:.7rem;cursor:pointer;min-height:36px}
-.todaybox{border-left:4px solid var(--a);padding-left:9px;margin-bottom:12px}
-.bigday{font-size:1.1rem;font-weight:bold}
+.todaybox{border-left:4px solid var(--a);padding-left:11px;margin-bottom:12px}
+.bigday{font-size:1.25rem;font-weight:bold;text-transform:capitalize}
+.todaySummary{display:flex;gap:7px;margin:8px 0 0;flex-wrap:wrap}
+.todayBadge{background:var(--item);border:1px solid var(--bor);border-radius:7px;padding:6px 9px;font-size:.68rem;color:var(--sub)}
+.todayBadge strong{color:#fff;font-size:.82rem;margin-right:3px}
+.quickrow{display:flex;gap:7px;margin-top:10px}
+.quickrow .btn{flex:1}
+.hoySectionTitle{display:flex;justify-content:space-between;align-items:center;font-size:.7rem;color:var(--sub);margin:9px 0 6px;text-transform:uppercase;font-weight:bold}
+.hoySectionTitle span:last-child{color:var(--a)}
+.todayEmpty{padding:15px;text-align:center;color:var(--sub);font-size:.8rem;background:var(--item);border-radius:7px}
 .nextbox{border-left:4px solid var(--blue);padding-left:9px;margin-bottom:10px}
 .nexttitle{font-size:1rem;font-weight:bold;color:var(--blue);margin-bottom:8px}
 .nextday{color:var(--a);font-size:.82rem;font-weight:bold;margin:9px 0 5px}
@@ -48,18 +85,166 @@ label{font-size:.75rem;color:var(--sub)}
 .nexttext{margin-top:2px}
 .notice{background:#332900;border:1px solid var(--yel);color:#fff;border-radius:8px;padding:10px;margin-bottom:10px;display:none}
 .notice strong{color:var(--yel)}
+.notice .noticeitem{margin-top:5px;padding-left:2px}
+.notice .noticehead{font-size:.9rem;margin-bottom:5px}
 .modal{position:fixed;inset:0;background:#000c;z-index:50;padding:12px;overflow:auto}
 .modalbox{max-width:600px;margin:20px auto;background:var(--card);border:1px solid var(--bor);border-radius:11px;padding:14px}
 .modalbox h2{text-align:center;margin-bottom:14px}
 .formrow{display:flex;gap:8px}.formrow>div{flex:1}
 .repeatbox{display:flex;align-items:center;gap:8px;padding:8px 0 12px;color:var(--sub);font-size:.75rem}
 .repeatbox input{width:20px;height:20px;margin:0}
+
+.archivoLista{display:flex;flex-direction:column;gap:8px}
+.archivoItem{background:var(--item);border-radius:9px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.archivoItem .titulo{font-weight:700}.archivoItem .detalle{color:var(--sub);font-size:.78rem;white-space:pre-wrap}
+.archivoItem button{padding:5px 8px}.archivoVacio{color:var(--sub);font-size:.82rem}
+
+.annualBadge{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:8px;background:#e91e63;color:#fff;font-size:.58rem;font-weight:bold}
+.birthdayInfo{background:var(--item);border-radius:9px;padding:10px 12px;margin-bottom:10px;font-size:.8rem}
+.birthdayInfo strong{color:var(--a)}
+
+/* =========================
+   v7.1 — APARIENCIA
+========================= */
+:root{
+  --a:#00e676;
+  --blue:#42a5f5;
+  --red:#ef5350;
+  --pink:#ec407a;
+  --yel:#ffca28;
+  --purple:#ab7cff;
+  --bg:#101214;
+  --card:#181b1f;
+  --item:#20252a;
+  --inp:#15181b;
+  --bor:#30363d;
+  --sub:#9aa4ad;
+}
+body{
+  background:linear-gradient(180deg,#0d0f11 0%,#12161a 55%,#0d0f11 100%);
+}
+header{
+  background:linear-gradient(135deg,#171b1f,#111416);
+  border-bottom:1px solid #2b3238;
+  box-shadow:0 4px 18px #0008;
+}
+header h1{
+  letter-spacing:.5px;
+}
+h2,h3{
+  letter-spacing:.2px;
+}
+.card{
+  box-shadow:0 3px 14px #0004;
+  transition:transform .15s,border-color .15s;
+}
+.card:hover{
+  border-color:#3a424a;
+}
+.btn,.sm{
+  transition:transform .12s,filter .12s;
+}
+.btn:hover,.sm:hover{
+  filter:brightness(1.08);
+  transform:translateY(-1px);
+}
+nav{
+  height:64px;
+  padding:5px 4px;
+  gap:4px;
+  background:rgba(20,23,27,.97);
+  backdrop-filter:blur(10px);
+  box-shadow:0 -4px 18px #0008;
+}
+nav button{
+  flex:1;
+  width:auto;
+  border-radius:10px;
+  font-size:.68rem;
+  line-height:1.15;
+  padding:6px 3px;
+  min-height:50px;
+  transition:.15s;
+}
+nav button.active{
+  background:#00e67618;
+  color:var(--a);
+  box-shadow:inset 0 0 0 1px #00e67655;
+}
+nav button[data-tab="archivo"]{
+  font-weight:bold;
+}
+.event{
+  border-left-width:4px;
+  box-shadow:0 2px 9px #0003;
+}
+.event.cita{border-left-color:var(--blue)}
+.event.medico{border-left-color:var(--red)}
+.event.cumple{border-left-color:var(--pink)}
+.event.viaje{border-left-color:var(--yel)}
+.event.tarea{border-left-color:var(--purple)}
+.etype{
+  font-weight:700;
+}
+#monthTitle{
+  text-transform:capitalize;
+  letter-spacing:.3px;
+}
+#calendar{
+  background:#0d1013;
+  padding:5px;
+  border-radius:11px;
+}
+.week{
+  font-weight:700;
+  padding:7px 2px;
+}
+.cal{
+  background:#191e22;
+  border:1px solid #272d33;
+}
+.cal.today{
+  border-color:var(--a);
+  box-shadow:inset 0 0 0 1px #00e67655;
+}
+.cal.sel{
+  background:#00e676;
+  color:#06100a;
+}
+.calCount{
+  background:#30373e;
+}
+.cal.sel .calCount{
+  background:#111;
+}
+#tareasPanel{
+  border-top:2px solid var(--purple);
+}
+#copiaSeguridadAgenda{
+  border-top:2px solid var(--a);
+}
+#archivo{
+  border-top:2px solid var(--blue);
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;
+  border-color:var(--a);
+  box-shadow:0 0 0 2px #00e67620;
+}
+@media(max-width:520px){
+  body{font-size:15px}
+  main{padding-bottom:76px}
+  nav{height:68px}
+  nav button{font-size:.62rem}
+  .calendar{gap:2px}
+  .cal{height:50px}
+}
 </style>
 </head>
 
 <body>
 
-<header><h1>📅 MI AGENDA v6.1 corregida</h1></header>
+<header><h1>📅 MI AGENDA v6.4 — HOY</h1></header>
 
 <div class="container">
 
@@ -70,6 +255,18 @@ label{font-size:.75rem;color:var(--sub)}
 <div class="card">
 <div class="todaybox">
 <div class="bigday" id="todayTitle"></div>
+<div class="todaySummary" id="todaySummary"></div>
+</div>
+<div class="quickrow">
+<button class="btn sm" id="todayQuickNew">➕ Añadir</button>
+<button class="btn out sm" id="todayQuickAgenda">📅 Ver agenda</button>
+</div>
+<div class="filterbar" id="todayFilters">
+<button data-filter="all" class="active">TODOS</button>
+<button data-filter="cita">📅 CITAS</button>
+<button data-filter="medico">🩺 MÉDICO</button>
+<button data-filter="cumple">🎂 CUMPLE</button>
+<button data-filter="viaje">✈️ VIAJES</button>
 </div>
 <div id="todayList"></div>
 </div>
@@ -82,11 +279,13 @@ label{font-size:.75rem;color:var(--sub)}
 </div>
 
 <div class="card">
-<h2>🔔 Avisos</h2>
+<h2>🔔 Avisos automáticos</h2>
 <p id="notificationStatus"
 style="color:var(--sub);font-size:.75rem;line-height:1.4;margin-bottom:8px">
-Activa los avisos para recibir la alerta de las 14:00.
+Activa los avisos para recibir cada día a las 14:00 un resumen de lo previsto para mañana.
 </p>
+<div id="nextAlertInfo"
+style="color:var(--blue);font-size:.75rem;line-height:1.4;margin-bottom:8px"></div>
 <button class="btn out" id="notificationBtn">
 🔔 Activar avisos
 </button>
@@ -101,6 +300,17 @@ Activa los avisos para recibir la alerta de las 14:00.
 
 
 <section id="agenda" class="tab">
+<div id="tareasPanel" class="card">
+  <h3>✅ TAREAS</h3>
+  <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <button class="sm" onclick="nuevaTareaAgenda()">➕ Nueva tarea</button>
+    <button class="sm out" onclick="filtrarTareasAgenda('pendientes')">Pendientes</button>
+    <button class="sm out" onclick="filtrarTareasAgenda('todas')">Todas</button>
+  </div>
+  <div id="listaTareasAgenda"></div>
+</div>
+
+
 
 <div class="card">
 
@@ -128,6 +338,14 @@ style="margin:0;text-align:center;flex:1"></h2>
 
 <h2 id="dayTitle"></h2>
 
+<div class="filterbar" id="dayFilters">
+<button data-filter="all" class="active">TODOS</button>
+<button data-filter="cita">📅 CITAS</button>
+<button data-filter="medico">🩺 MÉDICO</button>
+<button data-filter="cumple">🎂 CUMPLE</button>
+<button data-filter="viaje">✈️ VIAJES</button>
+</div>
+
 <div id="dayList"></div>
 
 <button class="btn" id="dayNew">
@@ -139,7 +357,28 @@ style="margin:0;text-align:center;flex:1"></h2>
 </section>
 
 
+<section id="archivo" class="tab">
+  <h2>📁 ARCHIVO</h2>
+  <p class="sub">Datos de coche, casa, telefonía, seguros y vacaciones.</p>
+  <div class="card"><h3>🚗 Coche</h3><div id="archivoCoche" class="archivoLista"></div></div>
+  <div class="card"><h3>🏠 Casa</h3><div id="archivoCasa" class="archivoLista"></div></div>
+  <div class="card"><h3>📱 Telefonía</h3><div id="archivoTelefonia" class="archivoLista"></div></div>
+  <div class="card"><h3>🛡️ Seguros</h3><div id="archivoSeguros" class="archivoLista"></div></div>
+  <div class="card"><h3>🏖️ Vacaciones</h3><div id="archivoVacaciones" class="archivoLista"></div></div>
+</section>
+
 <section id="ajustes" class="tab">
+<div id="copiaSeguridadAgenda" class="card">
+  <h3>💾 COPIA DE SEGURIDAD</h3>
+  <p class="sub">Guarda una copia completa de tu agenda y de los datos de ARCHIVO.<br><small>También puedes cargar copias JSON de versiones anteriores de Mi Agenda.</small></p>
+  <div style="display:grid;gap:7px">
+    <button class="btn" onclick="exportarCopiaAgenda()">⬇️ Descargar copia completa</button>
+    <button class="btn out" onclick="importarCopiaAgenda()">⬆️ Restaurar una copia</button>
+  </div>
+  <div id="estadoCopiaAgenda" class="sub" style="margin-top:9px"></div>
+</div>
+
+
 
 <div class="card">
 
@@ -185,6 +424,8 @@ Agenda personal sencilla. Los datos se guardan automáticamente en este disposit
 📅<br>Agenda
 </button>
 
+
+<button data-tab="archivo">📁 <span>ARCHIVO</span></button>
 <button id="navAjustes">
 ⚙️<br>Ajustes
 </button>
@@ -215,7 +456,9 @@ try{
 
 let view=new Date(),
 selected=today(),
-editId=null;
+editId=null,
+todayFilter="all",
+dayFilter="all";
 
 
 const $=id=>document.getElementById(id);
@@ -356,55 +599,82 @@ function icon(type){
 
 
 function card(e){
+  let tarea=e.type==="tarea";
+  let prioridad=tarea?(
+    '<span class="priority '+(e.priority||"normal")+'">'+
+    (e.priority==="high"?"ALTA":
+     e.priority==="low"?"BAJA":"NORMAL")+
+    '</span>'
+  ):"";
 
- let tarea=e.type==="tarea";
- let prioridad=tarea?(
-  '<span class="priority '+(e.priority||"normal")+'">'+
-  (e.priority==="high"?"ALTA":
-   e.priority==="low"?"BAJA":"NORMAL")+
-  '</span>'
- ):"";
+  let completar=tarea?
+    '<button class="completeBtn" data-complete="'+esc(e.id)+'">'+
+    (e.done?"↩️ Pendiente":"✅ Realizada")+
+    '</button>':
+    "";
 
- let completar=tarea?
-  '<button class="completeBtn" data-complete="'+esc(e.id)+'">'+
-  (e.done?"↩️ Pendiente":"✅ Realizada")+
-  '</button>':
-  "";
+  let isCita=e.type==="cita";
+  let dateLine=isCita
+    ? '<div class="edate"><span class="citatime">'+
+      (e.time?esc(e.time):"Sin hora")+
+      '</span><span class="citalabel">CITA · '+fmt(e.date)+'</span></div>'
+    : '<div class="edate">'+
+      (e.time?esc(e.time)+" · ":"")+
+      fmt(e.date)+
+      '</div>';
 
- return '<div class="event '+e.type+(e.done?" done":"")+'" data-id="'+esc(e.id)+'">'+
-
- '<div class="etype">'+
- names[e.type]+
- (e.repeat?" · ANUAL":"")+
- prioridad+
- '</div>'+
-
- '<div class="edate">'+
- (e.time?e.time+" · ":"")+
- fmt(e.date)+
- '</div>'+
-
- '<div class="etext '+(e.done?"taskDone":"")+'">'+
- esc(e.text)+
- '</div>'+
-
- (e.note?
-  '<div style="font-size:.72rem;color:var(--sub)">'+
-  esc(e.note)+
-  '</div>':
-  '')+
-
- '<div class="actions">'+
- completar+
- '<button class="editBtn" data-id="'+esc(e.id)+'">'+
- '✏️ Editar'+
- '</button>'+
- '<button class="deleteBtn" data-id="'+esc(e.id)+'">'+
- '🗑️ Borrar'+
- '</button>'+
- '</div></div>';
+  return '<div class="event '+e.type+(e.done?" done":"")+'" data-id="'+esc(e.id)+'">'+
+    '<div class="etype">'+
+      names[e.type]+
+      (e.repeat?" · ANUAL":"")+
+      prioridad+
+    '</div>'+
+    dateLine+
+    '<div class="etext '+(e.done?"taskDone":"")+'">'+
+      esc(e.text)+
+    '</div>'+
+    (e.note?
+      '<div style="font-size:.72rem;color:var(--sub)">'+
+      esc(e.note)+
+      '</div>':
+      '')+
+    '<div class="actions">'+
+      completar+
+      '<button class="editBtn" data-id="'+esc(e.id)+'">✏️ Editar</button>'+
+      '<button class="deleteBtn" data-id="'+esc(e.id)+'">🗑️ Borrar</button>'+
+    '</div></div>';
 }
 
+function filteredEvents(list,filter){
+  if(filter==="all")return list;
+  return list.filter(e=>e.type===filter);
+}
+
+function setFilter(containerId,filter){
+  let container=$(containerId);
+  if(!container)return;
+  container.querySelectorAll("button[data-filter]").forEach(b=>{
+    b.classList.toggle("active",b.dataset.filter===filter);
+  });
+}
+
+function setupFilters(){
+  $("todayFilters").querySelectorAll("button[data-filter]").forEach(b=>{
+    b.onclick=()=>{
+      todayFilter=b.dataset.filter;
+      setFilter("todayFilters",todayFilter);
+      renderToday();
+    };
+  });
+
+  $("dayFilters").querySelectorAll("button[data-filter]").forEach(b=>{
+    b.onclick=()=>{
+      dayFilter=b.dataset.filter;
+      setFilter("dayFilters",dayFilter);
+      renderDay();
+    };
+  });
+}
 
 /* =========================
    HOY
@@ -412,56 +682,74 @@ function card(e){
 
 function renderToday(){
 
- let d=new Date();
+  let d=new Date();
 
- $("todayTitle").textContent=
-  d.toLocaleDateString(
-   "es-ES",
-   {
-    weekday:"long",
-    day:"numeric",
-    month:"long"
-   }
-  );
+  $("todayTitle").textContent=
+   d.toLocaleDateString(
+    "es-ES",
+    {
+      weekday:"long",
+      day:"numeric",
+      month:"long"
+    }
+   );
 
- let a=allEvents()
-  .filter(e=>e.date===today())
-  .sort((a,b)=>
-   (a.time||"").localeCompare(b.time||"")
-  );
+  let allToday=allEvents()
+    .filter(e=>e.date===today())
+    .sort((a,b)=>
+      (a.time||"").localeCompare(b.time||"")
+    );
 
- let pendientes=a.filter(e=>e.type==="tarea"&&!e.done);
- let hechas=a.filter(e=>e.type==="tarea"&&e.done);
- let normales=a.filter(e=>e.type!=="tarea");
+  let citas=allToday.filter(e=>e.type==="cita");
+  let medicos=allToday.filter(e=>e.type==="medico");
+  let tareas=allToday.filter(e=>e.type==="tarea");
 
- let html="";
+  $("todaySummary").innerHTML=
+    '<div class="todayBadge"><strong>'+allToday.length+
+    '</strong> total</div>'+
+    '<div class="todayBadge"><strong>'+citas.length+
+    '</strong> citas</div>'+
+    '<div class="todayBadge"><strong>'+medicos.length+
+    '</strong> médicos</div>'+
+    '<div class="todayBadge"><strong>'+tareas.filter(e=>!e.done).length+
+    '</strong> tareas</div>';
 
- if(pendientes.length){
-  html+=
-   '<div class="sectionTitle">📌 TAREAS PENDIENTES</div>'+
-   pendientes.map(card).join("");
- }
+  let a=filteredEvents(allToday,todayFilter);
 
- if(normales.length){
-  html+=
-   '<div class="sectionTitle">📅 AGENDA DE HOY</div>'+
-   normales.map(card).join("");
- }
+  let pendientes=a.filter(e=>e.type==="tarea"&&!e.done);
+  let hechas=a.filter(e=>e.type==="tarea"&&e.done);
+  let normales=a.filter(e=>e.type!=="tarea");
 
- if(hechas.length){
-  html+=
-   '<div class="sectionTitle">✅ TAREAS COMPLETADAS</div>'+
-   hechas.map(card).join("");
- }
+  let html="";
 
- $("todayList").innerHTML=html||
-  '<div class="empty">'+
-  'No tienes nada previsto para hoy. 👍'+
-  '</div>';
+  if(!a.length){
+    html='<div class="todayEmpty">No hay elementos de este tipo para hoy. 👍</div>';
+  }else{
+    if(pendientes.length){
+      html+=
+       '<div class="hoySectionTitle"><span>📌 Tareas pendientes</span><span>'+
+       pendientes.length+'</span></div>'+
+       pendientes.map(card).join("");
+    }
 
- updateNotificationStatus();
+    if(normales.length){
+      html+=
+       '<div class="hoySectionTitle"><span>📅 Agenda de hoy</span><span>'+
+       normales.length+'</span></div>'+
+       normales.map(card).join("");
+    }
+
+    if(hechas.length){
+      html+=
+       '<div class="hoySectionTitle"><span>✅ Tareas completadas</span><span>'+
+       hechas.length+'</span></div>'+
+       hechas.map(card).join("");
+    }
+  }
+
+  $("todayList").innerHTML=html;
+  updateNotificationStatus();
 }
-
 
 /* =========================
    PRÓXIMOS AVISOS
@@ -590,30 +878,50 @@ function renderCalendar(){
 
   let es=a.filter(e=>e.date===z);
 
-  let dots=es.length?
+  /* Un punto de color por tipo, sin repetir el mismo tipo */
+  let tipos=[...new Set(es.map(e=>e.type))];
+
+  let dots=tipos.length?
    '<div class="dot">'+
-   es.map(e=>icon(e.type)).join("")+
+   tipos.map(t=>'<i class="'+t+'"></i>').join("")+
    '</div>':
+   "";
+
+  let count=es.length?
+   '<span class="calCount">'+es.length+'</span>':
    "";
 
   h+=
    '<div class="cal '+
    (z===today()?"today ":"")+
-   (z===selected?"sel":"")+
+   (z===selected?"sel ":"")+
+   (es.length?"hasEvents":"")+
    '" data-date="'+z+'">'+
-   d+
+   '<div class="daynum">'+d+'</div>'+
+   count+
    dots+
    '</div>';
  }
 
  $("calendar").innerHTML=h;
 
+ /* Leyenda */
+ const oldLegend=$("calendarLegend");
+ if(oldLegend) oldLegend.remove();
+ $("calendar").insertAdjacentHTML(
+  "afterend",
+  '<div class="calendarLegend" id="calendarLegend">'+
+  '<span><i class="cita"></i>Cita</span>'+
+  '<span><i class="medico"></i>Médico</span>'+
+  '<span><i class="cumple"></i>Cumple</span>'+
+  '<span><i class="viaje"></i>Viaje</span>'+
+  '<span><i class="tarea"></i>Tarea</span>'+
+  '</div>'
+ );
+
  document.querySelectorAll(".cal[data-date]").forEach(x=>
-
   x.onclick=()=>{
-
    selected=x.dataset.date;
-
    renderCalendar();
   }
  );
@@ -1070,273 +1378,233 @@ $("file").onchange=e=>{
 
 
 /* =========================
-   AVISOS
+   AVISOS AUTOMÁTICOS
 ========================= */
 
 function alertKey(){
-
- return "agenda_aviso_"+today();
+  return "agenda_aviso_"+today();
 }
-
 
 function tomorrowEvents(){
-
- let manana=addDays(today(),1);
-
- return allEvents()
-  .filter(e=>e.date===manana)
-  .sort((a,b)=>
-   (a.time||"").localeCompare(b.time||"")
-  );
+  let manana=addDays(today(),1);
+  return allEvents()
+    .filter(e=>e.date===manana)
+    .sort((a,b)=>
+      (a.time||"").localeCompare(b.time||"")
+    );
 }
 
-
-function showAlertMessage(lista){
-
- if(!lista.length)return;
-
- let texto=
-  "🔔 AVISO\n\n"+
-  "Mañana tienes:\n\n";
-
- lista.forEach(e=>{
-
-  texto+=
-   (e.time?
-    "⏰ "+e.time+" — ":
-    "• ")+
-   e.text+
-   "\n";
- });
-
-
- $("notice").innerHTML=
-  "<strong>🔔 AVISO</strong><br><br>"+
-  "Mañana tienes:<br>"+
-
-  lista.map(e=>
-   (e.time?
-    "⏰ "+esc(e.time)+" — ":
-    "• ")+
-   esc(e.text)
-  ).join("<br>");
-
-
- $("notice").style.display="block";
-
- alert(texto);
+function formatNoticeList(lista){
+  return lista.map(e=>{
+    let tipo=names[e.type]||"📌";
+    let hora=e.time?"⏰ "+esc(e.time)+" — ":"";
+    return '<div class="noticeitem">'+tipo+" "+hora+esc(e.text)+'</div>';
+  }).join("");
 }
 
+function showAlertMessage(lista,modo="manual"){
+  if(!lista.length)return;
+
+  let titulo=modo==="manual"
+    ? "🔔 AVISO — MAÑANA"
+    : "🔔 MI AGENDA — MAÑANA";
+
+  let texto="Mañana tienes:\\n\\n";
+
+  lista.forEach(e=>{
+    texto+=(e.time?"⏰ "+e.time+" — ":"• ")+e.text+"\\n";
+  });
+
+  $("notice").innerHTML=
+    '<strong class="noticehead">'+esc(titulo)+'</strong>'+
+    '<div>Mañana tienes:</div>'+
+    formatNoticeList(lista);
+
+  $("notice").style.display="block";
+
+  if(modo==="automatico"){
+    try{ alert(texto); }catch(e){}
+  }
+}
 
 function playAlertSound(){
+  try{
+    let AudioContext=
+      window.AudioContext||
+      window.webkitAudioContext;
 
- try{
+    if(!AudioContext)return;
 
-  let AudioContext=
-   window.AudioContext||
-   window.webkitAudioContext;
+    let ctx=new AudioContext(),
+        now=ctx.currentTime;
 
-  if(!AudioContext)return;
+    for(let i=0;i<3;i++){
+      let osc=ctx.createOscillator(),
+          gain=ctx.createGain();
 
-  let ctx=new AudioContext(),
-  now=ctx.currentTime;
+      osc.type="sine";
+      osc.frequency.value=i===0?880:i===1?1100:880;
 
+      gain.gain.setValueAtTime(.0001,now+i*.35);
+      gain.gain.exponentialRampToValueAtTime(.35,now+i*.35+.03);
+      gain.gain.exponentialRampToValueAtTime(.0001,now+i*.35+.28);
 
-  for(let i=0;i<3;i++){
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-   let osc=ctx.createOscillator(),
-   gain=ctx.createGain();
-
-   osc.type="sine";
-
-   osc.frequency.value=
-    i===0?
-    880:
-    i===1?
-    1100:
-    880;
-
-
-   gain.gain.setValueAtTime(
-    .0001,
-    now+i*.35
-   );
-
-   gain.gain.exponentialRampToValueAtTime(
-    .35,
-    now+i*.35+.03
-   );
-
-   gain.gain.exponentialRampToValueAtTime(
-    .0001,
-    now+i*.35+.28
-   );
-
-
-   osc.connect(gain);
-
-   gain.connect(ctx.destination);
-
-   osc.start(now+i*.35);
-
-   osc.stop(
-    now+i*.35+.3
-   );
-  }
-
- }catch(e){}
+      osc.start(now+i*.35);
+      osc.stop(now+i*.35+.3);
+    }
+  }catch(e){}
 }
-
 
 /* =========================
    NOTIFICACIONES
 ========================= */
 
 function updateNotificationStatus(){
-
- if(!("Notification" in window)){
-
-  $("notificationStatus").textContent=
-   "Este navegador no permite notificaciones.";
-
-  $("notificationBtn").style.display="none";
-
-  return;
- }
-
-
- if(Notification.permission==="granted"){
-
-  $("notificationStatus").textContent=
-   "✅ Avisos activados. La Agenda puede mostrar notificaciones.";
-
-  $("notificationBtn").textContent=
-   "✅ Avisos activados";
-
- }else if(Notification.permission==="denied"){
-
-  $("notificationStatus").textContent=
-   "⚠️ Las notificaciones están bloqueadas. Debes permitirlas desde los ajustes del navegador.";
-
-  $("notificationBtn").textContent=
-   "🔔 Permitir avisos";
-
- }else{
-
-  $("notificationStatus").textContent=
-   "Activa los avisos para recibir la alerta de las 14:00.";
-
-  $("notificationBtn").textContent=
-   "🔔 Activar avisos";
- }
-}
-
-
-$("notificationBtn").onclick=async()=>{
-
- if(!("Notification" in window)){
-
-  alert(
-   "Este navegador no permite notificaciones."
-  );
-
-  return;
- }
-
-
- try{
-
-  let permission=
-   await Notification.requestPermission();
-
-  updateNotificationStatus();
-
-
-  if(permission==="granted"){
-
-   try{
-
-    new Notification(
-     "📅 Mi Agenda",
-     {
-      body:
-       "Los avisos están activados correctamente."
-     }
-    );
-
-   }catch(e){}
-
-   playAlertSound();
+  if(!("Notification" in window)){
+    $("notificationStatus").textContent=
+      "Este navegador no permite notificaciones.";
+    $("notificationBtn").style.display="none";
+    $("nextAlertInfo").textContent="";
+    return;
   }
 
- }catch(e){
+  $("notificationBtn").style.display="block";
 
-  alert(
-   "No se ha podido activar el permiso de notificaciones."
-  );
- }
+  if(Notification.permission==="granted"){
+    $("notificationStatus").textContent=
+      "✅ Avisos activados. Cada día a las 14:00 se comprobará lo previsto para mañana.";
+    $("notificationBtn").textContent=
+      "✅ Avisos activados";
+  }else if(Notification.permission==="denied"){
+    $("notificationStatus").textContent=
+      "⚠️ Las notificaciones están bloqueadas. Debes permitirlas desde los ajustes del navegador.";
+    $("notificationBtn").textContent=
+      "🔔 Permitir avisos";
+  }else{
+    $("notificationStatus").textContent=
+      "Activa los avisos para recibir cada día a las 14:00 un resumen de lo previsto para mañana.";
+    $("notificationBtn").textContent=
+      "🔔 Activar avisos";
+  }
+
+  updateNextAlertInfo();
+}
+
+function updateNextAlertInfo(){
+  let ahora=new Date();
+  let objetivo=new Date(ahora);
+  objetivo.setHours(14,0,0,0);
+
+  if(ahora.getTime()>=objetivo.getTime()){
+    objetivo.setDate(objetivo.getDate()+1);
+  }
+
+  let ms=objetivo.getTime()-ahora.getTime();
+  let horas=Math.floor(ms/3600000);
+  let minutos=Math.floor((ms%3600000)/60000);
+
+  $("nextAlertInfo").textContent=
+    "⏰ Próxima comprobación automática: 14:00"+
+    " · faltan "+horas+" h "+minutos+" min.";
+}
+
+$("notificationBtn").onclick=async()=>{
+  if(!("Notification" in window)){
+    alert("Este navegador no permite notificaciones.");
+    return;
+  }
+
+  try{
+    let permission=await Notification.requestPermission();
+    updateNotificationStatus();
+
+    if(permission==="granted"){
+      try{
+        new Notification(
+          "📅 Mi Agenda",
+          {
+            body:"Los avisos automáticos están activados. Se comprobará la agenda a las 14:00."
+          }
+        );
+      }catch(e){}
+
+      playAlertSound();
+    }
+  }catch(e){
+    alert("No se ha podido activar el permiso de notificaciones.");
+  }
 };
-
 
 /* =========================
    COMPROBAR AVISOS
 ========================= */
 
-function checkAlerts(){
+function sendBrowserNotifications(lista){
+  if(
+    !("Notification" in window)||
+    Notification.permission!=="granted"
+  )return;
 
- let ahora=new Date(),
- hora=ahora.getHours(),
- minuto=ahora.getMinutes();
-
-
- if(hora!==14||minuto>5)return;
-
-
- let lista=tomorrowEvents();
-
-
- if(!lista.length)return;
-
-
- let key=alertKey();
-
-
- if(localStorage.getItem(key)==="1")
-  return;
-
-
- localStorage.setItem(key,"1");
-
-
- playAlertSound();
-
- showAlertMessage(lista);
-
-
- if(
-  "Notification" in window&&
-  Notification.permission==="granted"
- ){
-
-  lista.forEach(e=>{
-
-   try{
+  try{
+    let resumen=lista.map(e=>
+      (e.time?e.time+" — ":"")+e.text
+    ).join(" · ");
 
     new Notification(
-     "🔔 Mi Agenda — Mañana",
-     {
-      body:
-       (e.time?
-        e.time+" — ":"")+
-       e.text
-     }
+      "🔔 Mi Agenda — Mañana",
+      {
+        body:resumen
+      }
     );
-
-   }catch(err){}
-  });
- }
+  }catch(e){}
 }
 
+function checkAlerts(){
+  let ahora=new Date(),
+      hora=ahora.getHours(),
+      minuto=ahora.getMinutes();
+
+  updateNextAlertInfo();
+
+  /*
+    Ventana de seguridad de 10 minutos.
+    Así no se pierde el aviso si la comprobación ocurre
+    unos minutos después de las 14:00.
+  */
+  if(hora!==14||minuto>10)return;
+
+  let lista=tomorrowEvents();
+  if(!lista.length)return;
+
+  let key=alertKey();
+
+  if(localStorage.getItem(key)==="1")return;
+
+  localStorage.setItem(key,"1");
+
+  playAlertSound();
+  showAlertMessage(lista,"automatico");
+  sendBrowserNotifications(lista);
+}
+
+/* Permite consultar manualmente el aviso de mañana
+   sin marcarlo como aviso automático ya realizado. */
+function showTomorrowPreview(){
+  let lista=tomorrowEvents();
+
+  if(!lista.length){
+    $("notice").innerHTML=
+      '<strong>🔔 AVISO</strong><br><br>'+
+      'No tienes nada previsto para mañana.';
+    $("notice").style.display="block";
+    return;
+  }
+
+  showAlertMessage(lista,"manual");
+}
 
 /* =========================
    ARRANQUE
@@ -1353,12 +1621,337 @@ document.addEventListener("visibilitychange",()=>{
 
 window.addEventListener("focus",checkAlerts);
 
+setupFilters();
+setFilter("todayFilters",todayFilter);
+setFilter("dayFilters",dayFilter);
+
 renderToday();
-
 renderNext();
-
 updateNotificationStatus();
 
+</script>
+
+
+<script>
+(function(){
+const KEYA="mi_agenda_archivo_v1";
+const CATS=[["Coche","archivoCoche"],["Casa","archivoCasa"],["Telefonía","archivoTelefonia"],["Seguros","archivoSeguros"],["Vacaciones","archivoVacaciones"]];
+function getA(){try{const a=JSON.parse(localStorage.getItem(KEYA)||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+window.renderArchivo=function(){
+ const a=getA();
+ CATS.forEach(([cat,id])=>{
+  const b=document.getElementById(id); if(!b)return;
+  const rows=a.filter(x=>x.categoria===cat);
+  b.innerHTML=rows.length?rows.map(x=>`<div class="archivoItem"><div><div class="titulo">${esc(x.titulo)}</div><div class="detalle">${esc(x.detalle)}</div></div><div><button onclick="editarArchivo('${x.id}')">✏️</button><button onclick="borrarArchivo('${x.id}')">🗑️</button></div></div>`).join(""):'<div class="archivoVacio">Sin datos.</div>';
+ });
+};
+window.editarArchivo=function(id){const a=getA(),x=a.find(z=>z.id===id);if(!x)return;const t=prompt("Dato:",x.titulo);if(t===null)return;const d=prompt("Detalle:",x.detalle||"");if(d===null)return;x.titulo=t;x.detalle=d;localStorage.setItem(KEYA,JSON.stringify(a));renderArchivo()};
+window.borrarArchivo=function(id){if(!confirm("¿Eliminar este dato?"))return;localStorage.setItem(KEYA,JSON.stringify(getA().filter(x=>x.id!==id)));renderArchivo()};
+document.addEventListener("DOMContentLoaded",renderArchivo);
+})();
+</script>
+
+<script>
+(function(){
+  const BKEY="mi_agenda_cumples_v1";
+
+  function readBirthdays(){
+    try{const a=JSON.parse(localStorage.getItem(BKEY)||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}
+  }
+  function saveBirthdays(a){localStorage.setItem(BKEY,JSON.stringify(a))}
+
+  function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+  // Expose recurring birthday records independently, so they don't alter the user's
+  // normal event storage until the app renders the current year's occurrence.
+  window.getAnnualBirthdays=function(){return readBirthdays()};
+
+  window.addAnnualBirthday=function(){
+    const nombre=prompt("Nombre del cumpleaños:");
+    if(!nombre)return;
+    const fecha=prompt("Fecha (DD/MM):","01/01");
+    if(!fecha)return;
+    const m=fecha.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if(!m){alert("Introduce la fecha como DD/MM.");return}
+    const d=String(parseInt(m[1],10)).padStart(2,"0");
+    const mo=String(parseInt(m[2],10)).padStart(2,"0");
+    const a=readBirthdays();
+    a.push({id:"b_"+Date.now(),name:nombre,day:d,month:mo});
+    saveBirthdays(a);
+    if(typeof renderAll==="function")renderAll();
+    alert("Cumpleaños anual guardado.");
+  };
+
+  window.deleteAnnualBirthday=function(id){
+    if(!confirm("¿Eliminar este cumpleaños anual?"))return;
+    saveBirthdays(readBirthdays().filter(x=>x.id!==id));
+    if(typeof renderAll==="function")renderAll();
+    if(typeof renderCalendar==="function")renderCalendar();
+  };
+
+  // Add annual occurrences to allEvents without modifying the original event array.
+  const originalAllEvents=window.allEvents;
+  if(typeof originalAllEvents==="function"){
+    window.allEvents=function(){
+      const base=originalAllEvents();
+      const y=(typeof view!=="undefined"&&view instanceof Date)?view.getFullYear():new Date().getFullYear();
+      const annual=readBirthdays().map(x=>({
+        id:"annual_"+x.id+"_"+y,
+        date:y+"-"+x.month+"-"+x.day,
+        title:x.name,
+        type:"cumple",
+        annual:true
+      }));
+      return base.concat(annual);
+    };
+  }
+
+  document.addEventListener("DOMContentLoaded",function(){
+    const type=document.getElementById("type");
+    const wrap=document.getElementById("annualBirthdayWrap");
+    function toggle(){if(wrap)wrap.style.display=(type&&type.value==="cumple")?"block":"none"}
+    if(type){type.addEventListener("change",toggle);toggle()}
+
+    // Inform the user of the feature without changing existing data.
+    const panel=document.getElementById("agenda");
+    if(panel && !document.getElementById("birthdayAnnualInfo")){
+      const info=document.createElement("div");
+      info.id="birthdayAnnualInfo";
+      info.className="birthdayInfo";
+      info.innerHTML='<strong>🎂 Cumpleaños anuales</strong><br>Los cumpleaños guardados como anuales aparecerán automáticamente todos los años.';
+      panel.insertBefore(info,panel.firstChild);
+    }
+  });
+})();
+</script>
+
+<script>
+(function(){
+  let filtroTareas="pendientes";
+
+  function tareaEsc(s){
+    return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  }
+  function getEventsTarea(){
+    try{
+      const a=JSON.parse(localStorage.getItem("mi_agenda_v5")||"[]");
+      return Array.isArray(a)?a:[];
+    }catch(e){return[]}
+  }
+  function saveEventsTarea(a){localStorage.setItem("mi_agenda_v5",JSON.stringify(a))}
+
+  window.nuevaTareaAgenda=function(){
+    const titulo=prompt("¿Qué tarea quieres añadir?");
+    if(!titulo)return;
+    const fecha=prompt("Fecha (AAAA-MM-DD). Déjala vacía para hoy:",new Date().toISOString().slice(0,10));
+    const f=fecha||new Date().toISOString().slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){alert("Fecha no válida.");return}
+    const a=getEventsTarea();
+    a.push({id:"tarea_"+Date.now(),date:f,title:titulo,type:"tarea",done:false});
+    saveEventsTarea(a);
+    if(typeof renderAll==="function")renderAll();
+    renderTareasAgenda();
+  };
+
+  window.toggleTarea=function(id){
+    const a=getEventsTarea(),x=a.find(e=>e.id===id);
+    if(!x)return;
+    x.done=!x.done;
+    saveEventsTarea(a);
+    if(typeof renderAll==="function")renderAll();
+    renderTareasAgenda();
+  };
+
+  window.editarTarea=function(id){
+    const a=getEventsTarea(),x=a.find(e=>e.id===id);
+    if(!x)return;
+    const t=prompt("Tarea:",x.title);
+    if(t===null)return;
+    const f=prompt("Fecha (AAAA-MM-DD):",x.date||"");
+    if(f===null)return;
+    x.title=t;x.date=f;
+    saveEventsTarea(a);
+    if(typeof renderAll==="function")renderAll();
+    renderTareasAgenda();
+  };
+
+  window.borrarTarea=function(id){
+    if(!confirm("¿Eliminar esta tarea?"))return;
+    saveEventsTarea(getEventsTarea().filter(e=>e.id!==id));
+    if(typeof renderAll==="function")renderAll();
+    renderTareasAgenda();
+  };
+
+  window.filtrarTareasAgenda=function(f){
+    filtroTareas=f;renderTareasAgenda();
+  };
+
+  window.renderTareasAgenda=function(){
+    const box=document.getElementById("listaTareasAgenda");
+    if(!box)return;
+    let rows=getEventsTarea().filter(e=>e.type==="tarea");
+    if(filtroTareas==="pendientes")rows=rows.filter(e=>!e.done);
+    rows.sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+    if(!rows.length){
+      box.innerHTML='<div class="archivoVacio">No hay tareas '+(filtroTareas==="pendientes"?"pendientes.":"registradas.")+'</div>';
+      return;
+    }
+    const hoy=new Date().toISOString().slice(0,10);
+    box.innerHTML=rows.map(x=>{
+      const overdue=!x.done && x.date && x.date<hoy;
+      const today=!x.done && x.date===hoy;
+      const cls=x.done?"taskDone":"";
+      const meta=x.date?`<div class="taskMeta ${overdue?"taskOverdue":today?"taskToday":""}">${overdue?"⚠️ Vencida · ":today?"📌 Hoy · ":""}${tareaEsc(x.date)}</div>`:"";
+      return `<div class="archivoItem ${cls}">
+        <div class="taskRow">
+          <input class="taskCheck" type="checkbox" ${x.done?"checked":""} onchange="toggleTarea('${x.id}')">
+          <div><div class="titulo">${tareaEsc(x.title)}</div>${meta}</div>
+          <div class="taskActions"><button onclick="editarTarea('${x.id}')">✏️</button><button onclick="borrarTarea('${x.id}')">🗑️</button></div>
+        </div>
+      </div>`;
+    }).join("");
+  };
+
+  document.addEventListener("DOMContentLoaded",renderTareasAgenda);
+})();
+</script>
+
+<script>
+(function(){
+  const BACKUP_VERSION="Mi Agenda Backup v1";
+
+  function readKey(key,fallback){
+    try{
+      const v=JSON.parse(localStorage.getItem(key)||"null");
+      return v===null?fallback:v;
+    }catch(e){return fallback}
+  }
+
+  function estadoCopia(t){
+    const e=document.getElementById("estadoCopiaAgenda");
+    if(e)e.textContent=t;
+  }
+
+  window.exportarCopiaAgenda=function(){
+    const backup={
+      formato:BACKUP_VERSION,
+      fecha:new Date().toISOString(),
+      agenda:readKey("mi_agenda_v5",[]),
+      archivo:readKey("mi_agenda_archivo_v1",[]),
+      cumpleanosAnuales:readKey("mi_agenda_cumples_v1",[])
+    };
+    const blob=new Blob(
+      [JSON.stringify(backup,null,2)],
+      {type:"application/json;charset=utf-8"}
+    );
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="Mi_Agenda_Copia_"+new Date().toISOString().slice(0,10)+".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    estadoCopia("✓ Copia completa descargada correctamente.");
+  };
+
+  window.importarCopiaAgenda=function(){
+    const input=document.createElement("input");
+    input.type="file";
+    input.accept=".json,application/json";
+
+    input.onchange=function(){
+      const file=input.files&&input.files[0];
+      if(!file)return;
+
+      const reader=new FileReader();
+
+      reader.onload=function(){
+        try{
+          const data=JSON.parse(reader.result);
+          let agenda=null,archivo=null,cumples=null;
+          let tipo="";
+
+          /* NUEVA COPIA COMPLETA */
+          if(data && typeof data==="object" && !Array.isArray(data)){
+            if(Array.isArray(data.agenda)){
+              agenda=data.agenda;
+              tipo="copia completa";
+            }
+            if(Array.isArray(data.archivo)) archivo=data.archivo;
+            if(Array.isArray(data.cumpleanosAnuales))
+              cumples=data.cumpleanosAnuales;
+          }
+
+          /* COPIA ORIGINAL DE AGENDA O ARCHIVO */
+          if(Array.isArray(data)){
+            const esAgenda=data.some(x=>x && (
+              x.date!==undefined ||
+              x.fecha!==undefined ||
+              x.type!==undefined ||
+              x.tipo!==undefined ||
+              x.text!==undefined ||
+              x.titulo!==undefined && x.date!==undefined
+            ));
+
+            const esArchivo=data.some(x=>x && (
+              x.categoria!==undefined ||
+              x.category!==undefined ||
+              x.grupo!==undefined ||
+              x.concepto!==undefined
+            ));
+
+            if(esAgenda && !esArchivo){
+              agenda=data;
+              tipo="copia antigua de AGENDA";
+            }else if(esArchivo){
+              archivo=data;
+              tipo="copia antigua de ARCHIVO";
+            }
+          }
+
+          if(!agenda && !archivo && !cumples){
+            throw new Error("Formato no reconocido");
+          }
+
+          let msg="Se ha detectado: "+tipo+".";
+          if(agenda)msg+="\n\n📅 Agenda: "+agenda.length+" registros.";
+          if(archivo)msg+="\n📁 Archivo: "+archivo.length+" registros.";
+          if(cumples)msg+="\n🎂 Cumpleaños: "+cumples.length+" registros.";
+
+          msg+="\n\nSolo se reemplazarán los datos que contiene esta copia.";
+          msg+="\nLos demás datos actuales permanecerán intactos.";
+          msg+="\n\n¿Continuar?";
+
+          if(!confirm(msg))return;
+
+          if(agenda)
+            localStorage.setItem("mi_agenda_v5",JSON.stringify(agenda));
+
+          if(archivo)
+            localStorage.setItem("mi_agenda_archivo_v1",JSON.stringify(archivo));
+
+          if(cumples)
+            localStorage.setItem("mi_agenda_cumples_v1",JSON.stringify(cumples));
+
+          estadoCopia("✓ Copia compatible restaurada. Recargando…");
+          setTimeout(function(){location.reload()},600);
+
+        }catch(e){
+          alert(
+            "No se ha podido restaurar el archivo.\n\n"+
+            "El JSON no parece una copia válida de Mi Agenda."
+          );
+        }
+      };
+
+      reader.readAsText(file);
+    };
+
+    input.click();
+  };
+})();
 </script>
 
 </body>
