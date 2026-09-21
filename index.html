@@ -1971,11 +1971,51 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
   function archivoNormalizado(data){
     let rows=null;
 
-    /* Copia completa nueva */
-    if(data && typeof data==="object" && !Array.isArray(data) &&
-       Array.isArray(data.archivo)){
-      rows=data.archivo;
+    /* Copia completa nueva de Mi Agenda */
+    if(data && typeof data==="object" && !Array.isArray(data)){
+      if(Array.isArray(data.archivo)){
+        rows=data.archivo;
+      }
+      /* FORMATO ORIGINAL mi_archivo_YYYY-MM-DD.json:
+         { version, categories, records:[{id,category,title,details}] } */
+      else if(Array.isArray(data.records)){
+        rows=data.records;
+      }
     }
+
+    /* Copia antigua si fuera directamente un array */
+    if(Array.isArray(data)){
+      rows=data;
+    }
+
+    if(!rows)throw new Error("No se encontró información de ARCHIVO.");
+
+    return rows.map((x,i)=>{
+      x=x||{};
+
+      const categoria=x.categoria||x.category||x.grupo||x.seccion||"Otros";
+      const titulo=x.titulo||x.title||x.nombre||x.concepto||x.campo||("Dato "+(i+1));
+      const detalle=x.detalle||x.details||x.descripcion||x.valor||x.texto||x.dato||"";
+
+      /* Si viene del formato original, category es el ID:
+         coche, casa, telefonia, seguros, vacaciones.
+         Lo convertimos al nombre visible. */
+      const nombres={
+        coche:"Coche",
+        casa:"Casa",
+        telefonia:"Telefonía",
+        seguros:"Seguros",
+        vacaciones:"Vacaciones"
+      };
+
+      return {
+        id:String(x.id||("archivo_"+Date.now()+"_"+i)),
+        categoria:nombres[String(categoria).toLowerCase()]||String(categoria),
+        titulo:String(titulo),
+        detalle:String(detalle)
+      };
+    });
+  }
 
     /* Copia antigua: el propio array de Archivo */
     if(Array.isArray(data)){
