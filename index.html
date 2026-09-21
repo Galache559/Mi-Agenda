@@ -393,6 +393,12 @@ style="margin:0;text-align:center;flex:1"></h2>
 <button class="btn out" id="importBtn">
 📥 Importar agenda
 </button>
+<br><br>
+<button class="btn out" id="importArchivoBtn">
+📁 Importar copia de ARCHIVO
+</button>
+<input id="archivoBackupFile" type="file" accept=".json,application/json" style="display:none">
+<div id="estadoImportArchivo" class="sub" style="margin-top:8px"></div>
 
 <input id="file" type="file" accept=".json" style="display:none">
 
@@ -1959,5 +1965,96 @@ document.addEventListener("DOMContentLoaded",renderArchivo);
 })();
 </script>
 
+
+<script>
+(function(){
+  function archivoNormalizado(data){
+    let rows=null;
+
+    /* Copia completa nueva */
+    if(data && typeof data==="object" && !Array.isArray(data) &&
+       Array.isArray(data.archivo)){
+      rows=data.archivo;
+    }
+
+    /* Copia antigua: el propio array de Archivo */
+    if(Array.isArray(data)){
+      rows=data;
+    }
+
+    if(!rows)throw new Error("No se encontró información de ARCHIVO.");
+
+    return rows.map((x,i)=>{
+      x=x||{};
+      return {
+        id:String(x.id||("archivo_"+Date.now()+"_"+i)),
+        categoria:String(
+          x.categoria||x.category||x.grupo||x.seccion||"Otros"
+        ),
+        titulo:String(
+          x.titulo||x.nombre||x.title||x.concepto||x.campo||("Dato "+(i+1))
+        ),
+        detalle:String(
+          x.detalle||x.descripcion||x.valor||x.texto||x.dato||""
+        )
+      };
+    });
+  }
+
+  window.importarCopiaArchivo=function(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const data=JSON.parse(reader.result);
+        const rows=archivoNormalizado(data);
+
+        if(!rows.length){
+          alert("La copia de ARCHIVO no contiene datos.");
+          return;
+        }
+
+        const categorias=[...new Set(rows.map(x=>x.categoria))];
+        const mensaje=
+          "Se han encontrado "+rows.length+" datos de ARCHIVO."+
+          "\\n\\nCategorías: "+categorias.join(", ")+
+          "\\n\\nSe sustituirá el contenido actual de ARCHIVO."+
+          "\\nLa AGENDA no se modificará."+
+          "\\n\\n¿Continuar?";
+
+        if(!confirm(mensaje))return;
+
+        localStorage.setItem(
+          "mi_agenda_archivo_v1",
+          JSON.stringify(rows)
+        );
+
+        const estado=document.getElementById("estadoImportArchivo");
+        if(estado)estado.textContent="✓ Archivo restaurado correctamente. Recargando…";
+
+        setTimeout(function(){location.reload()},600);
+      }catch(e){
+        alert(
+          "No se ha podido cargar la copia de ARCHIVO.\\n\\n"+
+          "Comprueba que sea un archivo JSON de Mi Agenda."
+        );
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  document.addEventListener("DOMContentLoaded",function(){
+    const btn=document.getElementById("importArchivoBtn");
+    const input=document.getElementById("archivoBackupFile");
+    if(btn&&input){
+      btn.onclick=function(){input.click()};
+      input.onchange=function(){
+        if(input.files&&input.files[0]){
+          importarCopiaArchivo(input.files[0]);
+        }
+      };
+    }
+  });
+})();
+</script>
 </body>
 </html>
