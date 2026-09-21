@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Mi Agenda v6.1</title>
+<title>Mi Agenda v6.1 corregida</title>
 <meta name="theme-color" content="#121212">
 <style>
 :root{--bg:#121212;--card:#1e1e1e;--item:#252525;--inp:#2a2a2a;--a:#00e676;--txt:#fff;--sub:#aaa;--bor:#333;--red:#ff5252;--blue:#29b6f6;--yel:#ffd740;--pink:#ff80ab}
@@ -31,7 +31,7 @@ label{font-size:.75rem;color:var(--sub)}
 .cal.sel{background:var(--a);color:#000;font-weight:bold}
 .dot{position:absolute;bottom:3px;left:0;right:0;font-size:.55rem;white-space:nowrap;overflow:hidden}
 .event{background:var(--item);border-left:4px solid var(--a);border-radius:7px;padding:9px;margin-bottom:7px}
-.cita{border-color:var(--blue)}.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.tarea{border-color:#b388ff}.event.done{opacity:.58}.taskDone{text-decoration:line-through;color:#888}.priority{display:inline-block;padding:2px 5px;border:1px solid var(--bor);border-radius:4px;margin-left:5px;font-size:.6rem}.priority.high{color:#ff8a8a}.priority.low{color:#7ddfff}.priority.normal{color:#ccc}.cumple{border-color:var(--pink)}
+.cita{border-color:var(--blue)}.medico{border-color:var(--red)}.viaje{border-color:var(--yel)}.tarea{border-color:#b388ff}.event.done{opacity:.58}.taskDone{text-decoration:line-through;color:#888}.priority{display:inline-block;padding:2px 5px;border:1px solid var(--bor);border-radius:4px;margin-left:5px;font-size:.6rem}.priority.high{color:#ff8a8a}.priority.low{color:#7ddfff}.priority.normal{color:#ccc}.cumple{border-color:var(--pink)}.sectionTitle{font-size:.68rem;color:var(--sub);margin:8px 0 5px;text-transform:uppercase;font-weight:bold}
 .etype{font-size:.65rem;color:var(--sub);text-transform:uppercase}
 .edate{font-size:.7rem;color:var(--sub)}
 .etext{font-size:.9rem;margin:3px 0}
@@ -59,7 +59,7 @@ label{font-size:.75rem;color:var(--sub)}
 
 <body>
 
-<header><h1>📅 MI AGENDA v6.1</h1></header>
+<header><h1>📅 MI AGENDA v6.1 corregida</h1></header>
 
 <div class="container">
 
@@ -819,6 +819,17 @@ function openForm(date,e){
  esc(e&&e.note||"")+
  '</textarea>'+
 
+ '<div id="taskOptions" style="display:none">'+
+ '<label>Prioridad</label>'+
+ '<select id="fp">'+
+ '<option value="normal">⚪ Normal</option>'+
+ '<option value="high">🔴 Alta</option>'+
+ '<option value="low">🔵 Baja</option>'+
+ '</select>'+
+ '<label class="repeatbox">'+
+ '<input id="fdone" type="checkbox"> Tarea realizada</label>'+
+ '</div>'+
+
  '<label id="rl" class="repeatbox" style="display:none">'+
 
  '<input id="fr" type="checkbox" '+
@@ -1345,8 +1356,6 @@ window.addEventListener("focus",checkAlerts);
 renderToday();
 
 renderNext();
-
-renderCalendar();
 
 updateNotificationStatus();
 
