@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Mi Agenda v7.1 — Apariencia</title>
+<title>Mi Agenda</title>
 <meta name="theme-color" content="#121212">
 <style>
 :root{--bg:#121212;--card:#1e1e1e;--item:#252525;--inp:#2a2a2a;--a:#00e676;--txt:#fff;--sub:#aaa;--bor:#333;--red:#ff5252;--blue:#29b6f6;--yel:#ffd740;--pink:#ff80ab}
@@ -258,8 +258,8 @@ input:focus,select:focus,textarea:focus{
 <div class="todaySummary" id="todaySummary"></div>
 </div>
 <div class="quickrow">
-<button class="btn sm" id="todayQuickNew">➕ Añadir</button>
-<button class="btn out sm" id="todayQuickAgenda">📅 Ver agenda</button>
+<button class="btn sm" id="todayQuickNew" id="quickAdd">➕ Añadir</button>
+<button class="btn out sm" id="todayQuickAgenda" id="quickAgenda">📅 Ver agenda</button>
 </div>
 <div class="filterbar" id="todayFilters">
 <button data-filter="all" class="active">TODOS</button>
@@ -287,7 +287,7 @@ Activa los avisos para recibir cada día a las 14:00 un resumen de lo previsto p
 <div id="nextAlertInfo"
 style="color:var(--blue);font-size:.75rem;line-height:1.4;margin-bottom:8px"></div>
 <button class="btn out" id="notificationBtn">
-🔔 Activar avisos
+🔔 Avisos automáticos
 </button>
 </div>
 
@@ -425,7 +425,7 @@ Agenda personal sencilla. Los datos se guardan automáticamente en este disposit
 </button>
 
 
-<button data-tab="archivo">📁 <span>ARCHIVO</span></button>
+<button id="navArchivo">📁<br>ARCHIVO</button>
 <button id="navAjustes">
 ⚙️<br>Ajustes
 </button>
@@ -527,16 +527,21 @@ const names={
 
 function showTab(n){
 
- ["hoy","agenda","ajustes"].forEach(x=>
-  $(x).classList.toggle("active",x===n)
- );
+ ["hoy","agenda","archivo","ajustes"].forEach(x=>{
+  const el=$(x);
+  if(el)el.classList.toggle("active",x===n);
+ });
 
- ["navHoy","navAgenda","navAjustes"].forEach((x,i)=>
-  $(x).classList.toggle(
+ ["navHoy","navAgenda","navArchivo","navAjustes"].forEach(id=>{
+  const el=$(id);
+  if(el)el.classList.toggle(
    "active",
-   ["hoy","agenda","ajustes"][i]===n
-  )
- );
+   (id==="navHoy"&&n==="hoy") ||
+   (id==="navAgenda"&&n==="agenda") ||
+   (id==="navArchivo"&&n==="archivo") ||
+   (id==="navAjustes"&&n==="ajustes")
+  );
+ });
 
  if(n==="hoy"){
   renderToday();
@@ -546,12 +551,26 @@ function showTab(n){
  if(n==="agenda"){
   renderCalendar();
  }
+
+ if(n==="archivo" && typeof renderArchivo==="function"){
+  renderArchivo();
+ }
 }
 
 
 $("navHoy").onclick=()=>showTab("hoy");
 $("navAgenda").onclick=()=>showTab("agenda");
+$("navArchivo").onclick=()=>showTab("archivo");
 $("navAjustes").onclick=()=>showTab("ajustes");
+if($("quickAdd"))$("quickAdd").onclick=()=>{
+ showTab("agenda");
+ setTimeout(()=>{
+  const b=$("addBtn")||$("newBtn")||document.querySelector('[onclick*="open"]');
+  if(b)b.click();
+ },50);
+};
+if($("quickAgenda"))$("quickAgenda").onclick=()=>showTab("agenda");
+
 
 
 /* =========================
@@ -651,29 +670,36 @@ function filteredEvents(list,filter){
 }
 
 function setFilter(containerId,filter){
-  let container=$(containerId);
-  if(!container)return;
-  container.querySelectorAll("button[data-filter]").forEach(b=>{
-    b.classList.toggle("active",b.dataset.filter===filter);
-  });
+ let container=$(containerId);
+ if(!container)return;
+ container.querySelectorAll("button[data-filter]").forEach(b=>{
+  b.classList.toggle("active",b.dataset.filter===filter);
+ });
 }
 
 function setupFilters(){
-  $("todayFilters").querySelectorAll("button[data-filter]").forEach(b=>{
-    b.onclick=()=>{
-      todayFilter=b.dataset.filter;
-      setFilter("todayFilters",todayFilter);
-      renderToday();
-    };
-  });
 
-  $("dayFilters").querySelectorAll("button[data-filter]").forEach(b=>{
-    b.onclick=()=>{
-      dayFilter=b.dataset.filter;
-      setFilter("dayFilters",dayFilter);
-      renderDay();
-    };
+ const tf=$("todayFilters");
+ if(tf){
+  tf.querySelectorAll("button[data-filter]").forEach(b=>{
+   b.onclick=()=>{
+    todayFilter=b.dataset.filter;
+    setFilter("todayFilters",todayFilter);
+    renderToday();
+   };
   });
+ }
+
+ const df=$("dayFilters");
+ if(df){
+  df.querySelectorAll("button[data-filter]").forEach(b=>{
+   b.onclick=()=>{
+    dayFilter=b.dataset.filter;
+    setFilter("dayFilters",dayFilter);
+    renderDay();
+   };
+  });
+ }
 }
 
 /* =========================
@@ -682,73 +708,43 @@ function setupFilters(){
 
 function renderToday(){
 
-  let d=new Date();
+ const t=today();
+ const lista=allEvents().filter(e=>e.date===t);
 
-  $("todayTitle").textContent=
-   d.toLocaleDateString(
-    "es-ES",
-    {
-      weekday:"long",
-      day:"numeric",
-      month:"long"
-    }
-   );
+ const citas=lista.filter(e=>e.type==="cita").length;
+ const medicos=lista.filter(e=>e.type==="medico").length;
+ const tareas=lista.filter(e=>e.type==="tarea"&&!e.done).length;
 
-  let allToday=allEvents()
-    .filter(e=>e.date===today())
-    .sort((a,b)=>
-      (a.time||"").localeCompare(b.time||"")
-    );
+ const totalEl=$("todayTotal");
+ const citasEl=$("todayCitas");
+ const medEl=$("todayMedicos");
+ const tareasEl=$("todayTareas");
 
-  let citas=allToday.filter(e=>e.type==="cita");
-  let medicos=allToday.filter(e=>e.type==="medico");
-  let tareas=allToday.filter(e=>e.type==="tarea");
+ if(totalEl)totalEl.textContent=lista.length;
+ if(citasEl)citasEl.textContent=citas;
+ if(medEl)medEl.textContent=medicos;
+ if(tareasEl)tareasEl.textContent=tareas;
 
-  $("todaySummary").innerHTML=
-    '<div class="todayBadge"><strong>'+allToday.length+
-    '</strong> total</div>'+
-    '<div class="todayBadge"><strong>'+citas.length+
-    '</strong> citas</div>'+
-    '<div class="todayBadge"><strong>'+medicos.length+
-    '</strong> médicos</div>'+
-    '<div class="todayBadge"><strong>'+tareas.filter(e=>!e.done).length+
-    '</strong> tareas</div>';
+ const dateEl=$("todayDate");
+ if(dateEl){
+  dateEl.textContent=new Date(t+"T12:00:00").toLocaleDateString(
+   "es-ES",
+   {weekday:"long",day:"numeric",month:"long",year:"numeric"}
+  );
+ }
 
-  let a=filteredEvents(allToday,todayFilter);
+ const box=$("todayList");
+ if(!box)return;
 
-  let pendientes=a.filter(e=>e.type==="tarea"&&!e.done);
-  let hechas=a.filter(e=>e.type==="tarea"&&e.done);
-  let normales=a.filter(e=>e.type!=="tarea");
+ const filtered=filteredEvents(lista,todayFilter);
 
-  let html="";
+ if(!filtered.length){
+  box.innerHTML='<div class="card" style="text-align:center;color:var(--sub)">No hay anotaciones para hoy con este filtro.</div>';
+ }else{
+  box.innerHTML=filtered.map(card).join("");
+ }
 
-  if(!a.length){
-    html='<div class="todayEmpty">No hay elementos de este tipo para hoy. 👍</div>';
-  }else{
-    if(pendientes.length){
-      html+=
-       '<div class="hoySectionTitle"><span>📌 Tareas pendientes</span><span>'+
-       pendientes.length+'</span></div>'+
-       pendientes.map(card).join("");
-    }
-
-    if(normales.length){
-      html+=
-       '<div class="hoySectionTitle"><span>📅 Agenda de hoy</span><span>'+
-       normales.length+'</span></div>'+
-       normales.map(card).join("");
-    }
-
-    if(hechas.length){
-      html+=
-       '<div class="hoySectionTitle"><span>✅ Tareas completadas</span><span>'+
-       hechas.length+'</span></div>'+
-       hechas.map(card).join("");
-    }
-  }
-
-  $("todayList").innerHTML=html;
-  updateNotificationStatus();
+ bindCards(box);
 }
 
 /* =========================
@@ -1487,7 +1483,7 @@ function updateNotificationStatus(){
     $("notificationStatus").textContent=
       "Activa los avisos para recibir cada día a las 14:00 un resumen de lo previsto para mañana.";
     $("notificationBtn").textContent=
-      "🔔 Activar avisos";
+      "🔔 Avisos automáticos";
   }
 
   updateNextAlertInfo();
@@ -1604,6 +1600,15 @@ function showTomorrowPreview(){
   }
 
   showAlertMessage(lista,"manual");
+}
+
+
+/* =========================
+   AVISOS AUTOMÁTICOS ACTIVADOS
+========================= */
+const ALERTS_ENABLED_KEY="mi_agenda_avisos_automaticos";
+if(localStorage.getItem(ALERTS_ENABLED_KEY)!=="0"){
+  localStorage.setItem(ALERTS_ENABLED_KEY,"1");
 }
 
 /* =========================
