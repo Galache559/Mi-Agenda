@@ -285,7 +285,12 @@ input:focus,select:focus,textarea:focus{
 <h2 id="monthTitle" style="margin:0;text-align:center;flex:1"></h2>
 <button class="btn out sm" id="next">❯</button>
 </div>
-<button class="btn out" id="todayBtn" style="margin:8px 0 10px">📅 Ir a hoy</button>
+<button class="btn out" id="todayBtn" style="margin:8px 0 6px">📅 Ir a hoy</button>
+<div style="display:flex;gap:6px;margin:0 0 8px">
+<input id="agendaSearch" type="search" placeholder="🔎 Buscar en Mi Agenda…" autocomplete="off" style="flex:1;min-width:0">
+<button class="btn out sm" id="agendaSearchClear" type="button" title="Limpiar búsqueda">✕</button>
+</div>
+<div id="agendaSearchResults" style="display:none;margin:0 0 10px"></div>
 <div style="display:flex;gap:8px;margin:0 0 10px">
 <button class="btn" id="voiceNoteBtn" type="button" style="flex:1;font-size:1rem">🎙️ NOTA POR VOZ</button>
 </div>
@@ -944,8 +949,26 @@ $("todayBtn").onclick=()=>{
 };
 
 
-$("dayNew").onclick=()=>
- openForm(selected,null);
+$("dayNew").onclick=()=>{
+  openForm(selected,null);
+  /* Alta rápida: por defecto empieza como Nota y deja el cursor
+     directamente en la descripción, evitando pasos innecesarios. */
+  setTimeout(()=>{
+    const tipo=$("ft"), texto=$("fx");
+    if(tipo) { tipo.value="tarea"; tipo.dispatchEvent(new Event("change")); }
+    if(texto) texto.focus();
+  },50);
+};
+
+/* Atajo discreto: N abre una anotación rápida sin añadir botones. */
+document.addEventListener("keydown",e=>{
+  if(e.key.toLowerCase()!=="n" || e.ctrlKey || e.altKey || e.metaKey) return;
+  const tag=(e.target&&e.target.tagName||"").toLowerCase();
+  if(tag==="input" || tag==="textarea" || tag==="select" || e.target.isContentEditable) return;
+  if(document.querySelector(".modal")) return;
+  e.preventDefault();
+  $("dayNew").click();
+});
 
 
 /* =========================
@@ -1366,7 +1389,7 @@ function alertKey(){
 function tomorrowEvents(){
   let manana=addDays(today(),1);
   return allEvents()
-    .filter(e=>e.date===manana)
+    .filter(e=>e.date===manana && !(e.type==="tarea" && e.done===true))
     .sort((a,b)=>
       (a.time||"").localeCompare(b.time||"")
     );
@@ -1445,13 +1468,12 @@ function checkAlerts(){
       hora=ahora.getHours(),
       minuto=ahora.getMinutes();
 
-
   /*
-    Ventana de seguridad de 10 minutos.
-    Así no se pierde el aviso si la comprobación ocurre
-    unos minutos después de las 14:00.
+    Aviso inteligente: a partir de las 14:00 se puede lanzar una sola vez
+    durante el día. Así no se pierde si la Agenda se abre a las 16:00,
+    19:00, etc. Antes de las 14:00 no interrumpe al usuario.
   */
-  if(hora!==14||minuto>10)return;
+  if(hora<14)return;
 
   /* Aviso general de lo previsto para mañana. */
   let lista=tomorrowEvents();
@@ -2201,6 +2223,102 @@ document.addEventListener("DOMContentLoaded",function(){
 
 <script>
 /* =========================
+   BUSQUEDA RAPIDA
+========================= */
+(function(){
+  function iniciarBusquedaAgenda(){
+    const input=document.getElementById("agendaSearch");
+    const clear=document.getElementById("agendaSearchClear");
+    const box=document.getElementById("agendaSearchResults");
+    if(!input||!clear||!box)return;
+    function pintar(q){
+      q=String(q||"").trim().toLowerCase();
+      if(!q){box.style.display="none";box.innerHTML="";return;}
+      const resultados=allEvents().filter(e=>[e.text,e.note,names[e.type]||e.type,e.date,e.time].join(" ").toLowerCase().includes(q))
+        .sort((a,b)=>(String(b.date||"")+String(b.time||"")).localeCompare(String(a.date||"")+String(a.time||""))).slice(0,12);
+      if(!resultados.length){box.innerHTML='<div class="empty" style="padding:8px">No he encontrado nada.</div>';box.style.display="block";return;}
+      box.innerHTML=resultados.map((e,i)=>{
+        const fecha=e.date?new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
+        const tipo=names[e.type]||"📌";
+        return '<button type="button" class="archivoItem" data-search-index="'+i+'" style="width:100%;text-align:left;border:0;cursor:pointer;margin-bottom:5px"><div class="titulo">'+tipo+' '+esc(e.text||"")+(e.done?' · ✅':'')+'</div><div class="taskMeta">'+fecha+(e.time?' · ⏰ '+esc(e.time):"")+'</div></button>';
+      }).join("");
+      resultados.forEach((e,i)=>{const b=box.querySelector('[data-search-index="'+i+'"]');if(b)b.onclick=function(){selected=e.date||today();view=new Date(selected+"T12:00:00");renderToday();renderNext();renderCalendar();box.style.display="none";input.value="";};});
+      box.style.display="block";
+    }
+    input.addEventListener("input",()=>pintar(input.value));
+    input.addEventListener("keydown",e=>{if(e.key==="Escape"){input.value="";pintar("");input.blur();}});
+    clear.onclick=function(){input.value="";pintar("");input.focus();};
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciarBusquedaAgenda);else iniciarBusquedaAgenda();
+})();
+</script>
+
+<script>
+/* =========================
+   REPETIR ACCION HABITUAL
+   “repetir” desde Nota por voz repite la última tarea del día seleccionado.
+   Sin añadir botones grandes a la interfaz.
+========================= */
+(function(){
+  window.repetirAccionAgenda=function(textoOrden){
+    try{
+      const base=String(typeof selected!=="undefined"?selected:today());
+      const orden=String(textoOrden||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+      const resto=orden.replace(/^repetir\b\s*/i,"").trim();
+      let destino;
+      if(!resto){
+        destino=addDays(base,1);
+      }else if(typeof fechaVozGlobalAgenda==="function"){
+        destino=fechaVozGlobalAgenda(resto);
+      }else{
+        destino=addDays(base,1);
+      }
+      const candidatas=allEvents()
+        .filter(e=>e && e.type==="tarea" && e.date===base)
+        .sort((a,b)=>(String(a.time||"")+String(a.id||"")).localeCompare(String(b.time||"")+String(b.id||"")));
+      const origen=candidatas[candidatas.length-1];
+      if(!origen){
+        alert("⚠️ No hay ninguna nota o tarea para repetir en este día.");
+        return false;
+      }
+      const copia={
+        ...origen,
+        id:"rep_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),
+        date:destino,
+        done:false,
+        repeat:false,
+        voice:false,
+        note:(origen.note?String(origen.note)+" · ":"")+"Repetida desde "+fmt(base)
+      };
+      delete copia.voiceSavedAt;
+      events.push(copia);
+      save();
+      selected=destino;
+      view=new Date(destino+"T12:00:00");
+      renderToday();
+      renderNext();
+      renderCalendar();
+      checkAlerts();
+      alert("🔁 Acción repetida para "+fmt(destino)+".");
+      return true;
+    }catch(e){ return false; }
+  };
+})();
+
+function borrarUltimaAccionAgenda(){
+  try{
+    const base=String(typeof selected!=="undefined"?selected:today());
+    const candidatas=allEvents().filter(e=>e&&e.date===base).sort((a,b)=>(String(a.time||"")+String(a.id||"")).localeCompare(String(b.time||"")+String(b.id||"")));
+    const ultima=candidatas[candidatas.length-1];
+    if(!ultima){alert("⚠️ No hay ninguna anotación para borrar en este día.");return false;}
+    if(!confirm("¿Borrar la última anotación?\n\n"+String(ultima.text||"Anotación")))return false;
+    const idx=events.findIndex(e=>e&&e.id===ultima.id);
+    if(idx<0)return false;
+    events.splice(idx,1);save();renderToday();renderNext();renderCalendar();checkAlerts();alert("🗑️ Anotación borrada.");return true;
+  }catch(e){return false;}
+}
+
+/* =========================
    NOTA POR VOZ — v2.0
    Guardado manos libres por orden de voz
 ========================= */
@@ -2236,7 +2354,7 @@ document.addEventListener("DOMContentLoaded",function(){
       '<button class="btn" id="voiceSave" type="button">💾 Guardar nota</button>'+
       '<button class="btn out" id="voiceCancel" type="button">Cancelar</button>'+
       '</div>'+
-      '<div style="margin-top:10px;font-size:.85rem;opacity:.75">💡 También puedes decir <strong>“guarda nota”</strong> y se guardará automáticamente.</div>'+
+      '<div style="margin-top:10px;font-size:.85rem;opacity:.75">💡 Di <strong>“guarda nota”</strong>, <strong>“repetir”</strong> o <strong>“borrar la última”</strong>.</div>'+
       '</div>';
     document.body.appendChild(m);
 
@@ -2260,22 +2378,51 @@ document.addEventListener("DOMContentLoaded",function(){
       return String(s||"")
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\\u0300-\\u036f]/g,"")
+        .replace(/[\u0300-\u036f]/g,"")
         .replace(/[¿?¡!.,;:]+/g," ")
-        .replace(/\\s+/g," ")
+        .replace(/\s+/g," ")
         .trim();
     }
 
     function quitarOrdenGuardar(s){
       /* Solo usamos órdenes inequívocas para no guardar accidentalmente una frase normal. */
       let limpio=String(s||"");
-      const re=/\\s*(?:guarda|guardar)\\s+nota\\s*[.!?,;:]?\\s*$/i;
+      const re=/\s*(?:guarda|guardar)\s+nota\s*[.!?,;:]?\s*$/i;
       return limpio.replace(re,"").trim();
     }
 
     function contieneOrdenGuardar(s){
       const n=normalizarOrden(s);
-      return /(?:^|\\s)(?:guarda|guardar)\\s+nota(?:\\s|$)/i.test(n);
+      return /(?:^|\s)(?:guarda|guardar)\s+nota(?:\s|$)/i.test(n);
+    }
+
+    function contieneOrdenRepetir(s){
+      const n=normalizarOrden(s);
+      return /^(?:repetir)(?:\s|$)/i.test(n);
+    }
+
+    function contieneOrdenBorrar(s){
+      const n=normalizarOrden(s);
+      return /^(?:borra|borrar|elimina|eliminar)\s+(?:la\s+)?(?:ultima|ultimo)(?:\s|$)/i.test(n);
+    }
+
+    function horaVoz(texto){
+      const raw=normalizarOrden(texto);
+      const m=raw.match(/\ba\s+las\s+(\d{1,2})(?:\s+y\s+(\d{1,2}))?\b/);
+      if(!m)return null;
+      const h=Number(m[1]),min=m[2]?Number(m[2]):0;
+      return h<=23&&min<=59?String(h).padStart(2,"0")+":"+String(min).padStart(2,"0"):null;
+    }
+
+    function limpiarProgramacionVoz(s){
+      let x=String(s||"");
+      x=x.replace(/\s*(?:guarda|guardar)\s+nota\s*[.!?,;:]?\s*$/i,"");
+      x=x.replace(/\b(?:mañana|manana|pasado mañana|pasado manana|hoy)\b/gi,"");
+      x=x.replace(/\b(?:el\s+)?(?:proximo|siguiente|este)\s+(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)(?:\s+que\s+viene)?\b/gi,"");
+      x=x.replace(/\b(?:el\s+)?(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)\s+que\s+viene\b/gi,"");
+      x=x.replace(/\b(?:el\s+)?(?:dia\s+)?\d{1,2}\s*(?:[\/\-]\s*\d{1,2}(?:\s*[\/\-]\s*\d{2,4})?|de\s+[a-z]+(?:\s+de\s+\d{4})?|del\s+(?:mes\s+que\s+viene|proximo\s+mes|siguiente\s+mes))\b/gi,"");
+      x=x.replace(/\ba\s+las\s+\d{1,2}(?:\s+y\s+\d{1,2})?\b/gi,"");
+      return x.replace(/\s{2,}/g," ").replace(/^\s*[,.;:-]+|[,.;:-]+\s*$/g,"").trim();
     }
 
     function cerrar(){
@@ -2300,61 +2447,121 @@ document.addEventListener("DOMContentLoaded",function(){
       noviembre:10,diciembre:11
     };
 
+    const diasSemana={
+      domingo:0,lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6
+    };
+
+    const numeros={
+      uno:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,
+      diez:10,once:11,doce:12,trece:13,catorce:14,quince:15,dieciseis:16,
+      diecisiete:17,dieciocho:18,diecinueve:19,veinte:20,veintiuno:21,
+      veintidos:22,veintitres:23,veinticuatro:24,veinticinco:25,veintiseis:26,
+      veintisiete:27,veintiocho:28,veintinueve:29,treinta:30,treintaiuno:31
+    };
+
+    function fechaFormateada(d){
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    }
+
+    function siguienteDiaSemana(nombre,modo){
+      const objetivo=diasSemana[nombre];
+      if(objetivo===undefined)return null;
+      const h=new Date();
+      const hoyNum=h.getDay();
+      let salto=(objetivo-hoyNum+7)%7;
+      if(modo==="proximo" || modo==="siguiente" || (modo==="este" && salto===0))salto=salto||7;
+      const d=new Date(h.getFullYear(),h.getMonth(),h.getDate()+salto,12);
+      return fechaFormateada(d);
+    }
+
     function fechaVoz(texto){
       const raw=String(texto||"").toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
       const hoy=new Date();
+      const hoyBase=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12);
 
-      if(/\bpasado manana\b/.test(raw)){
-        return addDays(today(),2);
+      if(/\bpasado manana\b/.test(raw)) return addDays(today(),2);
+      if(/\bmanana\b/.test(raw)) return addDays(today(),1);
+      if(/\bhoy\b/.test(raw)) return today();
+
+      /* “el lunes”, “este viernes”, “el proximo lunes”, “el lunes que viene” */
+      let diaSemana=raw.match(/\b(?:el\s+|este\s+|proximo\s+|siguiente\s+)?(domingo|lunes|martes|miercoles|jueves|viernes|sabado)(?:\s+que\s+viene)?\b/);
+      if(diaSemana){
+        const previo=raw.match(/\b(proximo|siguiente|este)\s+(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)\b/);
+        const queViene=/\b(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)\s+que\s+viene\b/.test(raw);
+        const modo=queViene?"proximo":(previo?previo[1]:"el");
+        const f=siguienteDiaSemana(diaSemana[1],modo);
+        if(f)return f;
       }
-      if(/\bmanana\b/.test(raw)){
-        return addDays(today(),1);
+
+      /* “el 30 de este mes” */
+      let m=raw.match(/\b(?:el\s+)?(?:dia\s+)?(\d{1,2})\s+de\s+este\s+mes\b/);
+      if(m){
+        const dia=Number(m[1]);
+        if(dia>=1 && dia<=31){
+          const d=new Date(hoy.getFullYear(),hoy.getMonth(),dia,12);
+          if(d.getMonth()===hoy.getMonth() && d.getDate()===dia) return fechaFormateada(d);
+        }
       }
-      if(/\bhoy\b/.test(raw)){
-        return today();
+
+      /* “el 30 del mes que viene” / “el día 5 del próximo mes” */
+      m=raw.match(/\b(?:el\s+)?(?:dia\s+)?(\d{1,2})\s+del\s+(?:mes\s+que\s+viene|proximo\s+mes|siguiente\s+mes)\b/);
+      if(m){
+        const dia=Number(m[1]);
+        if(dia>=1 && dia<=31){
+          const d=new Date(hoy.getFullYear(),hoy.getMonth()+1,dia,12);
+          if(d.getDate()===dia) return fechaFormateada(d);
+        }
       }
 
       /* 30/09, 30-09, 30/09/2026 */
-      let m=raw.match(/\b(?:el\s+dia\s+|dia\s+)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+      m=raw.match(/\b(?:el\s+dia\s+|dia\s+)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
       if(m){
-        let dia=Number(m[1]), mes=Number(m[2])-1;
+        const dia=Number(m[1]), mes=Number(m[2])-1;
         let anio=m[3]?Number(m[3]):hoy.getFullYear();
         if(anio<100)anio+=2000;
-        let d=new Date(anio,mes,dia,12);
-        if(!m[3] && d<new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12)){
-          d.setFullYear(d.getFullYear()+1);
-        }
-        if(d.getMonth()===mes && d.getDate()===dia)
-          return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+        const d=new Date(anio,mes,dia,12);
+        if(!m[3] && d<hoyBase)d.setFullYear(d.getFullYear()+1);
+        if(d.getMonth()===mes && d.getDate()===dia) return fechaFormateada(d);
       }
 
-      /* 30 de septiembre / el dia 30 de septiembre de 2026 */
+      /* “30 de septiembre” / “el dia 30 de septiembre de 2026” */
       m=raw.match(/\b(?:el\s+)?(?:dia\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?\b/);
       if(m && meses[m[2]]!==undefined){
-        let dia=Number(m[1]), mes=meses[m[2]], anio=m[3]?Number(m[3]):hoy.getFullYear();
-        let d=new Date(anio,mes,dia,12);
-        if(!m[3] && d<new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12))
-          d.setFullYear(d.getFullYear()+1);
-        if(d.getMonth()===mes && d.getDate()===dia)
-          return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+        const dia=Number(m[1]), mes=meses[m[2]];
+        let anio=m[3]?Number(m[3]):hoy.getFullYear();
+        const d=new Date(anio,mes,dia,12);
+        if(!m[3] && d<hoyBase)d.setFullYear(d.getFullYear()+1);
+        if(d.getMonth()===mes && d.getDate()===dia) return fechaFormateada(d);
+      }
+
+      /* “dia treinta” / “el dia veinticinco” */
+      m=raw.match(/\b(?:el\s+)?dia\s+([a-z]+)\b/);
+      if(m && numeros[m[1]]!==undefined){
+        const dia=numeros[m[1]];
+        if(dia>=1 && dia<=31){
+          let d=new Date(hoy.getFullYear(),hoy.getMonth(),dia,12);
+          if(d<hoyBase)d=new Date(hoy.getFullYear(),hoy.getMonth()+1,dia,12);
+          if(d.getDate()===dia)return fechaFormateada(d);
+        }
       }
 
       /* Si solo dice “dia 30”, usamos el próximo día 30 disponible. */
       m=raw.match(/\b(?:el\s+)?dia\s+(\d{1,2})\b/);
       if(m){
-        let dia=Number(m[1]);
+        const dia=Number(m[1]);
         if(dia>=1 && dia<=31){
           let d=new Date(hoy.getFullYear(),hoy.getMonth(),dia,12);
-          if(d<new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12))
-            d=new Date(hoy.getFullYear(),hoy.getMonth()+1,dia,12);
-          if(d.getDate()===dia)
-            return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+          if(d<hoyBase)d=new Date(hoy.getFullYear(),hoy.getMonth()+1,dia,12);
+          if(d.getDate()===dia)return fechaFormateada(d);
         }
       }
 
+      /* Sin fecha explícita: se mantiene el comportamiento actual y se guarda hoy. */
       return today();
     }
+
+    window.fechaVozGlobalAgenda=fechaVoz;
 
     function guardarNota(){
       if(guardando)return;
@@ -2362,7 +2569,9 @@ document.addEventListener("DOMContentLoaded",function(){
       saveBtn.disabled=true;
       parar();
 
-      let text=quitarOrdenGuardar(txt.value.trim());
+      const textoOriginal=quitarOrdenGuardar(txt.value.trim());
+      let text=limpiarProgramacionVoz(textoOriginal);
+      if(!text)text=textoOriginal;
       if(!text){
         guardando=false;
         saveBtn.disabled=false;
@@ -2401,7 +2610,7 @@ document.addEventListener("DOMContentLoaded",function(){
         id:"voz_"+now+"_"+Math.random().toString(36).slice(2,8),
         type:"tarea",
         date:fechaNota,
-        time:horaActual(),
+        time:horaVoz(textoOriginal)||horaActual(),
         text:text,
         note:"Anotación grabada por voz",
         repeat:false,
@@ -2437,7 +2646,7 @@ document.addEventListener("DOMContentLoaded",function(){
         start.disabled=true;
         stop.disabled=false;
         status.classList.add("active");
-        status.textContent="🔴 Escuchando... al terminar di “guarda nota”.";
+        status.textContent="🔴 Escuchando... puedes decir “guarda nota”, “repetir” o “borrar la última”.";
       };
 
       recognition.onresult=function(e){
@@ -2453,6 +2662,24 @@ document.addEventListener("DOMContentLoaded",function(){
 
         const mostrado=(finalText+(interim?" "+interim:"")).trim();
         txt.value=mostrado;
+
+        /* “borrar la última” pide confirmación antes de eliminar. */
+        if(contieneOrdenBorrar(mostrado)){
+          parar();
+          cerrar();
+          borrarUltimaAccionAgenda();
+          return;
+        }
+
+        /* “repetir” reutiliza la última tarea del día seleccionado.
+           Si se acompaña de una fecha, esa será la nueva fecha; si no, mañana. */
+        if(contieneOrdenRepetir(mostrado)){
+          parar();
+          const ordenRepetir=normalizarOrden(mostrado);
+          cerrar();
+          repetirAccionAgenda(ordenRepetir);
+          return;
+        }
 
         /* En cuanto la orden llega como resultado final, guardamos automáticamente. */
         if(contieneOrdenGuardar(mostrado)){
