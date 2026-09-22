@@ -39,7 +39,7 @@ label{font-size:.75rem;color:var(--sub)}
 .dot i.medico{background:var(--red)}
 .dot i.cumple{background:var(--pink)}
 .dot i.viaje{background:var(--yel)}
-.dot i.tarea{background:#b388ff}
+.dot i.tarea{background:var(--purple)}
 .calCount{position:absolute;top:3px;right:4px;min-width:14px;height:14px;padding:0 3px;border-radius:8px;background:#444;color:#fff;font-size:.55rem;line-height:14px;font-weight:bold}
 .cal.sel .calCount{background:#000;color:#fff}
 .calendarLegend{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:8px;color:var(--sub);font-size:.62rem}
@@ -49,6 +49,7 @@ label{font-size:.75rem;color:var(--sub)}
 .calendarLegend .medico{background:var(--red)}
 .calendarLegend .cumple{background:var(--pink)}
 .calendarLegend .viaje{background:var(--yel)}
+.calendarLegend .tarea{background:var(--purple)}
 .calendarLegend .tarea{background:#b388ff}
 .event{background:var(--item);border-left:4px solid var(--a);border-radius:7px;padding:9px;margin-bottom:7px}
 .cita{border-color:var(--blue);background:#17242b}
@@ -262,93 +263,38 @@ input:focus,select:focus,textarea:focus{
 
 <div class="container">
 
-<section id="hoy" class="tab active">
-
+<section id="agenda" class="tab active">
 <div id="notice" class="notice"></div>
-
 <div class="card">
-<div class="todaybox">
-<div class="bigday" id="todayTitle"></div>
-<div class="todaySummary" id="todaySummary"></div>
-</div>
-<div class="quickrow">
-<button class="btn sm" id="quickAdd">➕ Añadir</button>
-
-</div>
-<div class="filterbar" id="todayFilters">
-<button data-filter="cita">📅 CITAS</button>
-<button data-filter="medico">🩺 MÉDICO</button>
-<button data-filter="cumple">🎂 CUMPLE</button>
-<button data-filter="viaje">✈️ VIAJES</button>
-</div>
-<div id="todayList"></div>
-</div>
-
-<div class="card">
-<div class="nextbox">
-<div class="nexttitle">🔔 PRÓXIMOS AVISOS</div>
-<div id="nextList"></div>
-</div>
-</div>
-
-<div class="card">
-<h2>➕ Añadir</h2>
-<button class="btn" id="newBtn">Nueva anotación</button>
-</div>
-
-</section>
-
-
-<section id="agenda" class="tab">
-
-
-
-<div class="card">
-
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-
 <button class="btn out sm" id="prev">❮</button>
-
-<h2 id="monthTitle"
-style="margin:0;text-align:center;flex:1"></h2>
-
+<h2 id="monthTitle" style="margin:0;text-align:center;flex:1"></h2>
 <button class="btn out sm" id="next">❯</button>
-
 </div>
-
-<button class="btn out" id="todayBtn" style="margin:8px 0 10px">
-📅 Ir a hoy
-</button>
-
+<button class="btn out" id="todayBtn" style="margin:8px 0 10px">📅 Ir a hoy</button>
 <div class="calendar" id="calendar"></div>
-
 </div>
-
-
 <div class="card">
-
-<h2>📅 CALENDARIO</h2>
-
-<h2 id="dayTitle"></h2>
-
+<h2>📊 INFORME DIARIO</h2>
+<div class="todaybox">
+<div class="bigday" id="dayTitle"></div>
+<div class="todaySummary" id="dailySummary"></div>
+</div>
 <div id="dayList"></div>
-
-<button class="btn" id="dayNew">
-＋ Añadir a este día
-</button>
-
+<button class="btn" id="dayNew">➕ Nueva anotación</button>
 </div>
-
 <div class="card">
-
 <h2>📊 INFORME MENSUAL</h2>
-
+<div class="sectionTitle" id="monthReportTitle"></div>
 <div class="filterbar" id="monthFilters"></div>
-
 <div id="monthList"></div>
-
 </div>
-
+<div class="card">
+<h2>📊 INFORME ANUAL</h2>
+<div class="sectionTitle" id="yearReportTitle"></div>
+<div class="filterbar" id="annualFilters"></div>
+<div id="annualList"></div>
+</div>
 </section>
 
 
@@ -455,21 +401,9 @@ Agenda personal sencilla. Los datos se guardan automáticamente en este disposit
 
 
 <nav>
-
-<button id="navHoy" class="active">
-🏠<br>Hoy
-</button>
-
-<button id="navAgenda">
-📅<br>Agenda
-</button>
-
-
+<button id="navAgenda" class="active">📅<br>Agenda</button>
 <button id="navArchivo">📁<br>ARCHIVO</button>
-<button id="navAjustes">
-⚙️<br>Ajustes
-</button>
-
+<button id="navAjustes">⚙️<br>Ajustes</button>
 </nav>
 
 
@@ -497,9 +431,8 @@ try{
 let view=new Date(),
 selected=today(),
 editId=null,
-todayFilter="cita",
 monthFilter="cita",
-agendaDisplayMode="day";
+annualFilter="cita";
 
 
 const $=id=>document.getElementById(id);
@@ -560,59 +493,35 @@ function fmt(s){
 const names={
  cita:"🔵 Cita",
  cumple:"🎂 Cumpleaños",
- tarea:"📌 Tarea",
+ tarea:"📝 Nota",
  medico:"🩺 Médico",
  viaje:"✈️ Viaje"
 };
 
 
 function showTab(n){
-
- ["hoy","agenda","archivo","ajustes"].forEach(x=>{
-  const el=$(x);
-  if(el)el.classList.toggle("active",x===n);
- });
-
- ["navHoy","navAgenda","navArchivo","navAjustes"].forEach(id=>{
-  const el=$(id);
-  if(el)el.classList.toggle(
-   "active",
-   (id==="navHoy"&&n==="hoy") ||
-   (id==="navAgenda"&&n==="agenda") ||
-   (id==="navArchivo"&&n==="archivo") ||
-   (id==="navAjustes"&&n==="ajustes")
-  );
- });
-
- if(n==="hoy"){
-  renderToday();
-  renderNext();
- }
-
- if(n==="agenda"){
-  renderTareasAgenda();
-  renderCalendar();
- }
-
- if(n==="archivo" && typeof renderArchivo==="function"){
-  renderArchivo();
- }
+  ["agenda","archivo","ajustes"].forEach(x=>{
+    const el=$(x);
+    if(el)el.classList.toggle("active",x===n);
+  });
+  ["navAgenda","navArchivo","navAjustes"].forEach(id=>{
+    const el=$(id);
+    if(el)el.classList.toggle("active",
+      (id==="navAgenda"&&n==="agenda") ||
+      (id==="navArchivo"&&n==="archivo") ||
+      (id==="navAjustes"&&n==="ajustes"));
+  });
+  if(n==="agenda"){
+    renderCalendar();
+    renderMonthlyReport();
+    renderAnnualReport();
+  }
+  if(n==="archivo" && typeof renderArchivo==="function")renderArchivo();
 }
 
-
-$("navHoy").onclick=()=>showTab("hoy");
 $("navAgenda").onclick=()=>showTab("agenda");
 $("navArchivo").onclick=()=>showTab("archivo");
 $("navAjustes").onclick=()=>showTab("ajustes");
-if($("quickAdd"))$("quickAdd").onclick=()=>{
- showTab("agenda");
- setTimeout(()=>{
-  const b=$("addBtn")||$("newBtn")||document.querySelector('[onclick*="open"]');
-  if(b)b.click();
- },50);
-};
-
-
 
 
 /* =========================
@@ -720,19 +629,8 @@ function setFilter(containerId,filter){
 }
 
 function setupFilters(){
-
- const tf=$("todayFilters");
- if(tf){
-  tf.querySelectorAll("button[data-filter]").forEach(b=>{
-   b.onclick=()=>{
-    todayFilter=b.dataset.filter;
-    setFilter("todayFilters",todayFilter);
-    renderToday();
-   };
-  });
- }
-
- setupMonthFilters();
+  setupMonthFilters();
+  setupAnnualFilters();
 }
 
 function typeLabel(type){
@@ -742,102 +640,77 @@ function typeLabel(type){
   .replace(/_/g," ");
 }
 
-function getMonthTypes(){
- const base=["cita","medico","cumple","viaje"];
- const extra=[];
- allEvents().forEach(e=>{
-  if(e&&e.type&&!base.includes(e.type)&&!extra.includes(e.type)){
-   extra.push(e.type);
-  }
- });
- return base.concat(extra);
-}
+function getReportTypes(){return ["cita","medico","cumple","viaje"];}
 
 function setupMonthFilters(){
- const box=$("monthFilters");
- if(!box)return;
- const tipos=getMonthTypes();
- box.innerHTML=tipos.map(t=>
-  '<button data-filter="'+esc(t)+'">'+esc(typeLabel(t))+'</button>'
- ).join("");
- box.querySelectorAll("button[data-filter]").forEach(b=>{
-  b.onclick=()=>{
-   monthFilter=b.dataset.filter;
-   setFilter("monthFilters",monthFilter);
-   renderMonthlyReport();
-  };
- });
- setFilter("monthFilters",monthFilter);
+  const box=$("monthFilters"); if(!box)return;
+  box.innerHTML=getReportTypes().map(t=>'<button data-filter="'+esc(t)+'">'+esc(typeLabel(t))+'</button>').join("");
+  box.querySelectorAll("button[data-filter]").forEach(b=>b.onclick=()=>{
+    monthFilter=b.dataset.filter; setFilter("monthFilters",monthFilter); renderMonthlyReport();
+  });
+  setFilter("monthFilters",monthFilter);
+}
+
+function setupAnnualFilters(){
+  const box=$("annualFilters"); if(!box)return;
+  box.innerHTML=getReportTypes().map(t=>'<button data-filter="'+esc(t)+'">'+esc(typeLabel(t))+'</button>').join("");
+  box.querySelectorAll("button[data-filter]").forEach(b=>b.onclick=()=>{
+    annualFilter=b.dataset.filter; setFilter("annualFilters",annualFilter); renderAnnualReport();
+  });
+  setFilter("annualFilters",annualFilter);
 }
 
 function renderMonthlyReport(){
- const y=view.getFullYear();
- const m=view.getMonth();
- const inicio=y+"-"+String(m+1).padStart(2,"0")+"-01";
- const fin=new Date(y,m+1,0).getDate();
- const finFecha=y+"-"+String(m+1).padStart(2,"0")+"-"+String(fin).padStart(2,"0");
-
- setupMonthFilters();
-
- const mes=allEvents()
-  .filter(e=>e.date>=inicio&&e.date<=finFecha)
-  .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
-
- const a=filteredEvents(mes,monthFilter);
- const box=$("monthList");
- if(!box)return;
-
- box.innerHTML=a.length?
-  a.map(card).join(""):
-  '<div class="empty">No hay '+esc(typeLabel(monthFilter).replace(/^.*? /,""))+' previstos en este mes.</div>';
-
- bindCards(box);
+  const y=view.getFullYear(),m=view.getMonth();
+  const inicio=y+"-"+String(m+1).padStart(2,"0")+"-01";
+  const finFecha=y+"-"+String(m+1).padStart(2,"0")+"-"+String(new Date(y,m+1,0).getDate()).padStart(2,"0");
+  setupMonthFilters();
+  const title=$("monthReportTitle");
+  if(title)title.textContent=view.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+  const mes=allEvents().filter(e=>e.date>=inicio&&e.date<=finFecha)
+    .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+  const a=filteredEvents(mes,monthFilter),box=$("monthList");
+  if(!box)return;
+  box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay '+esc(typeLabel(monthFilter).replace(/^.*? /,""))+' previstos en este mes.</div>';
+  bindCards(box);
 }
+
+function renderAnnualReport(){
+  const y=new Date().getFullYear();
+  setupAnnualFilters();
+  const title=$("yearReportTitle"); if(title)title.textContent=String(y);
+  const lista=allEvents().filter(e=>e.date>=y+"-01-01"&&e.date<=y+"-12-31")
+    .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+  const a=filteredEvents(lista,annualFilter),box=$("annualList");
+  if(!box)return;
+  box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay '+esc(typeLabel(annualFilter).replace(/^.*? /,""))+' previstos en este año.</div>';
+  bindCards(box);
+}
+
+/* =========================
+   INFORME DIARIO
+========================= */
+
 
 /* =========================
    HOY
 ========================= */
 
-function renderToday(){
-
- const t=today();
- const lista=allEvents().filter(e=>e.date>=t);
-
- const citas=lista.filter(e=>e.type==="cita").length;
- const medicos=lista.filter(e=>e.type==="medico").length;
- const tareas=lista.filter(e=>e.type==="tarea"&&!e.done).length;
-
- const totalEl=$("todayTotal");
- const citasEl=$("todayCitas");
- const medEl=$("todayMedicos");
- const tareasEl=$("todayTareas");
-
- if(totalEl)totalEl.textContent=lista.length;
- if(citasEl)citasEl.textContent=citas;
- if(medEl)medEl.textContent=medicos;
- if(tareasEl)tareasEl.textContent=tareas;
-
- const dateEl=$("todayDate");
- if(dateEl){
-  dateEl.textContent=new Date(t+"T12:00:00").toLocaleDateString(
-   "es-ES",
-   {weekday:"long",day:"numeric",month:"long",year:"numeric"}
-  );
- }
-
- const box=$("todayList");
- if(!box)return;
-
- const filtered=filteredEvents(lista,todayFilter);
-
- if(!filtered.length){
-  box.innerHTML='<div class="card" style="text-align:center;color:var(--sub)">No hay anotaciones para hoy con este filtro.</div>';
- }else{
-  box.innerHTML=filtered.map(card).join("");
- }
-
- bindCards(box);
+function renderDailyReport(){
+  const d=new Date(selected+"T12:00:00"),title=$("dayTitle");
+  if(title)title.textContent=d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const a=allEvents().filter(e=>e.date===selected).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  const summary=$("dailySummary");
+  if(summary){
+    const c={cita:a.filter(e=>e.type==="cita").length,medico:a.filter(e=>e.type==="medico").length,cumple:a.filter(e=>e.type==="cumple").length,viaje:a.filter(e=>e.type==="viaje").length,nota:a.filter(e=>e.type==="tarea").length};
+    summary.innerHTML='<span class="todayBadge"><strong>'+c.cita+'</strong> Citas</span><span class="todayBadge"><strong>'+c.medico+'</strong> Médico</span><span class="todayBadge"><strong>'+c.cumple+'</strong> Cumple</span><span class="todayBadge"><strong>'+c.viaje+'</strong> Viajes</span>'+(c.nota?'<span class="todayBadge"><strong>'+c.nota+'</strong> Notas</span>':'');
+  }
+  const box=$("dayList"); if(!box)return;
+  box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay nada previsto para este día.</div>';
+  bindCards(box);
 }
+function renderToday(){renderDailyReport();}
+
 
 /* =========================
    PRÓXIMOS AVISOS
@@ -1003,6 +876,7 @@ function renderCalendar(){
   '<span><i class="medico"></i>Médico</span>'+
   '<span><i class="cumple"></i>Cumple</span>'+
   '<span><i class="viaje"></i>Viaje</span>'+
+  '<span><i class="tarea"></i>Nota</span>'+
   '</div>'
  );
 
@@ -1019,35 +893,10 @@ function renderCalendar(){
 
 
 function renderDay(){
-
- const d=new Date(selected+"T12:00:00");
-
- $("dayTitle").textContent=
-  d.toLocaleDateString(
-   "es-ES",
-   {
-    weekday:"long",
-    day:"numeric",
-    month:"long",
-    year:"numeric"
-   }
-  );
-
- let a=allEvents()
-  .filter(e=>e.date===selected)
-  .sort((a,b)=>(a.time||"").localeCompare(b.time||""));
-
- /* Al seleccionar un día se muestran TODAS las anotaciones
-    previstas para ese día, independientemente del informe mensual. */
-
- $("dayList").innerHTML=a.length?
-  a.map(card).join(""):
-  '<div class="empty">No hay nada previsto para este día.</div>';
-
- bindCards($("dayList"));
- renderMonthlyReport();
+  renderDailyReport();
+  renderMonthlyReport();
+  renderAnnualReport();
 }
-
 
 /* =========================
    NAVEGACIÓN
@@ -1076,10 +925,6 @@ $("todayBtn").onclick=()=>{
 
  renderCalendar();
 };
-
-
-$("newBtn").onclick=()=>
- openForm(today(),null);
 
 
 $("dayNew").onclick=()=>
@@ -1184,6 +1029,7 @@ function openForm(date,e){
  '<option value="cumple">🎂 Cumpleaños</option>'+
  '<option value="medico">🩺 Médico</option>'+
  '<option value="viaje">✈️ Viaje</option>'+
+  '<option value="tarea">📝 Nota</option>'+
 
  '</select>'+
 
@@ -1644,12 +1490,12 @@ document.addEventListener("visibilitychange",()=>{
 
 window.addEventListener("focus",checkAlerts);
 
-setupFilters();
-setFilter("todayFilters",todayFilter);
 setupMonthFilters();
+setupAnnualFilters();
 
-renderToday();
-renderNext();
+renderCalendar();
+renderMonthlyReport();
+renderAnnualReport();
 
 </script>
 
