@@ -1453,18 +1453,56 @@ function checkAlerts(){
   */
   if(hora!==14||minuto>10)return;
 
+  /* Aviso general de lo previsto para mañana. */
   let lista=tomorrowEvents();
+  if(lista.length){
+    let key=alertKey();
+
+    if(localStorage.getItem(key)!=="1"){
+      localStorage.setItem(key,"1");
+      playAlertSound();
+      showAlertMessage(lista,"automatico");
+      sendBrowserNotifications(lista);
+    }
+  }
+
+  /*
+    Las notas creadas por voz tienen además una segunda comprobación:
+    si hoy es exactamente el día indicado al hablar, avisan hoy.
+  */
+  let hoyVoz=voiceEventsForDate(today());
+  if(hoyVoz.length){
+    let keyVoz="agenda_aviso_voz_hoy_"+today();
+    if(localStorage.getItem(keyVoz)!=="1"){
+      localStorage.setItem(keyVoz,"1");
+      playAlertSound();
+      showVoiceDateAlert(hoyVoz);
+      sendBrowserNotifications(hoyVoz);
+    }
+  }
+}
+
+function voiceEventsForDate(fecha){
+  return allEvents()
+    .filter(e=>e && e.voice===true && e.date===fecha)
+    .sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+}
+
+function showVoiceDateAlert(lista){
   if(!lista.length)return;
 
-  let key=alertKey();
+  let texto="Hoy tienes:\n\n";
+  lista.forEach(e=>{
+    texto+=(e.time?"⏰ "+e.time+" — ":"• " )+e.text+"\n";
+  });
 
-  if(localStorage.getItem(key)==="1")return;
+  $("notice").innerHTML=
+    '<strong class="noticehead">🔔 MI AGENDA — HOY</strong>'+
+    '<div>Hoy tienes:</div>'+
+    formatNoticeList(lista);
 
-  localStorage.setItem(key,"1");
-
-  playAlertSound();
-  showAlertMessage(lista,"automatico");
-  sendBrowserNotifications(lista);
+  $("notice").style.display="block";
+  try{ alert(texto); }catch(e){}
 }
 
 /* Permite consultar manualmente el aviso de mañana
@@ -2256,6 +2294,68 @@ document.addEventListener("DOMContentLoaded",function(){
       status.classList.remove("active");
     }
 
+    const meses={
+      enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,
+      julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,
+      noviembre:10,diciembre:11
+    };
+
+    function fechaVoz(texto){
+      const raw=String(texto||"").toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+      const hoy=new Date();
+
+      if(/\bpasado manana\b/.test(raw)){
+        return addDays(today(),2);
+      }
+      if(/\bmanana\b/.test(raw)){
+        return addDays(today(),1);
+      }
+      if(/\bhoy\b/.test(raw)){
+        return today();
+      }
+
+      /* 30/09, 30-09, 30/09/2026 */
+      let m=raw.match(/\b(?:el\s+dia\s+|dia\s+)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+      if(m){
+        let dia=Number(m[1]), mes=Number(m[2])-1;
+        let anio=m[3]?Number(m[3]):hoy.getFullYear();
+        if(anio<100)anio+=2000;
+        let d=new Date(anio,mes,dia,12);
+        if(!m[3] && d<new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12)){
+          d.setFullYear(d.getFullYear()+1);
+        }
+        if(d.getMonth()===mes && d.getDate()===dia)
+          return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+      }
+
+      /* 30 de septiembre / el dia 30 de septiembre de 2026 */
+      m=raw.match(/\b(?:el\s+)?(?:dia\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?\b/);
+      if(m && meses[m[2]]!==undefined){
+        let dia=Number(m[1]), mes=meses[m[2]], anio=m[3]?Number(m[3]):hoy.getFullYear();
+        let d=new Date(anio,mes,dia,12);
+        if(!m[3] && d<new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12))
+          d.setFullYear(d.getFullYear()+1);
+        if(d.getMonth()===mes && d.getDate()===dia)
+          return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+      }
+
+      /* Si solo dice “dia 30”, usamos el próximo día 30 disponible. */
+      m=raw.match(/\b(?:el\s+)?dia\s+(\d{1,2})\b/);
+      if(m){
+        let dia=Number(m[1]);
+        if(dia>=1 && dia<=31){
+          let d=new Date(hoy.getFullYear(),hoy.getMonth(),dia,12);
+          if(d<new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12))
+            d=new Date(hoy.getFullYear(),hoy.getMonth()+1,dia,12);
+          if(d.getDate()===dia)
+            return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+        }
+      }
+
+      return today();
+    }
+
     function guardarNota(){
       if(guardando)return;
       guardando=true;
@@ -2295,10 +2395,12 @@ document.addEventListener("DOMContentLoaded",function(){
         return;
       }
 
+      const fechaNota=fechaVoz(text);
+
       const x={
         id:"voz_"+now+"_"+Math.random().toString(36).slice(2,8),
         type:"tarea",
-        date:today(),
+        date:fechaNota,
         time:horaActual(),
         text:text,
         note:"Anotación grabada por voz",
