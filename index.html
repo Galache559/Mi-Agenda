@@ -2163,9 +2163,14 @@ document.addEventListener("DOMContentLoaded",function(){
 
 <script>
 /* =========================
-   NOTA POR VOZ — v1.1
+   NOTA POR VOZ — v2.0
+   Guardado manos libres por orden de voz
 ========================= */
 (function(){
+  /* Evita que este módulo se inicialice dos veces si el HTML/script se carga de nuevo */
+  if(window.__miAgendaVoiceModuleLoaded)return;
+  window.__miAgendaVoiceModuleLoaded=true;
+
   const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 
   function horaActual(){
@@ -2174,8 +2179,12 @@ document.addEventListener("DOMContentLoaded",function(){
   }
 
   function abrirNotaVoz(){
+    /* No abrir dos ventanas de voz a la vez */
+    if(document.querySelector('[data-mi-agenda-voice-modal="1"]'))return;
+
     const m=document.createElement("div");
     m.className="modal";
+    m.dataset.miAgendaVoiceModal="1";
     m.innerHTML=
       '<div class="modalbox">'+
       '<h2>🎙️ Nota por voz</h2>'+
@@ -2189,6 +2198,7 @@ document.addEventListener("DOMContentLoaded",function(){
       '<button class="btn" id="voiceSave" type="button">💾 Guardar nota</button>'+
       '<button class="btn out" id="voiceCancel" type="button">Cancelar</button>'+
       '</div>'+
+      '<div style="margin-top:10px;font-size:.85rem;opacity:.75">💡 También puedes decir <strong>“guarda nota”</strong> y se guardará automáticamente.</div>'+
       '</div>';
     document.body.appendChild(m);
 
@@ -2201,10 +2211,39 @@ document.addEventListener("DOMContentLoaded",function(){
     let recognition=null;
     let escuchando=false;
     let finalText="";
+    let guardando=false;
 
     if(!SpeechRecognition){
       status.innerHTML="⚠️ Este navegador no permite reconocimiento de voz. Puedes escribir la nota manualmente.";
       start.disabled=true;
+    }
+
+    function normalizarOrden(s){
+      return String(s||"")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g,"")
+        .replace(/[¿?¡!.,;:]+/g," ")
+        .replace(/\\s+/g," ")
+        .trim();
+    }
+
+    function quitarOrdenGuardar(s){
+      /* Solo usamos órdenes inequívocas para no guardar accidentalmente una frase normal. */
+      let limpio=String(s||"");
+      const re=/\\s*(?:guarda|guardar)\\s+nota\\s*[.!?,;:]?\\s*$/i;
+      return limpio.replace(re,"").trim();
+    }
+
+    function contieneOrdenGuardar(s){
+      const n=normalizarOrden(s);
+      return /(?:^|\\s)(?:guarda|guardar)\\s+nota(?:\\s|$)/i.test(n);
+    }
+
+    function cerrar(){
+      try{ if(recognition)recognition.onend=null; }catch(e){}
+      try{ if(recognition)recognition.stop(); }catch(e){}
+      m.remove();
     }
 
     function parar(){
@@ -2217,8 +2256,73 @@ document.addEventListener("DOMContentLoaded",function(){
       status.classList.remove("active");
     }
 
+    function guardarNota(){
+      if(guardando)return;
+      guardando=true;
+      saveBtn.disabled=true;
+      parar();
+
+      let text=quitarOrdenGuardar(txt.value.trim());
+      if(!text){
+        guardando=false;
+        saveBtn.disabled=false;
+        status.textContent="⚠️ No hay ninguna anotación para guardar.";
+        txt.focus();
+        return;
+      }
+
+      /* Bloqueo compartido para impedir dobles/múltiples guardados */
+      const lockKey="mi_agenda_voice_save_lock";
+      const now=Date.now();
+      try{
+        const lock=JSON.parse(sessionStorage.getItem(lockKey)||"null");
+        if(lock && lock.text===text && now-Number(lock.time||0)<10000){
+          cerrar();
+          return;
+        }
+        sessionStorage.setItem(lockKey,JSON.stringify({text,time:now}));
+      }catch(e){}
+
+      /* Evita duplicados recientes de la misma nota por voz */
+      const duplicada=events.some(e=>
+        e && e.type==="tarea" &&
+        (e.voice===true || e.note==="Anotación grabada por voz") &&
+        String(e.text||"").trim()===text &&
+        now-Number(e.voiceSavedAt||0)<10000
+      );
+      if(duplicada){
+        cerrar();
+        return;
+      }
+
+      const x={
+        id:"voz_"+now+"_"+Math.random().toString(36).slice(2,8),
+        type:"tarea",
+        date:today(),
+        time:horaActual(),
+        text:text,
+        note:"Anotación grabada por voz",
+        repeat:false,
+        done:false,
+        priority:"high",
+        voice:true,
+        voiceSavedAt:now
+      };
+
+      events.push(x);
+      save();
+      selected=x.date;
+      view=new Date(x.date+"T12:00:00");
+      renderToday();
+      renderNext();
+      renderCalendar();
+      checkAlerts();
+      cerrar();
+      alert("✅ Nota guardada correctamente.");
+    }
+
     start.onclick=function(){
-      if(!SpeechRecognition)return;
+      if(!SpeechRecognition || guardando)return;
       if(escuchando)return;
       finalText=txt.value.trim();
       recognition=new SpeechRecognition();
@@ -2231,7 +2335,7 @@ document.addEventListener("DOMContentLoaded",function(){
         start.disabled=true;
         stop.disabled=false;
         status.classList.add("active");
-        status.textContent="🔴 Escuchando... habla ahora.";
+        status.textContent="🔴 Escuchando... al terminar di “guarda nota”.";
       };
 
       recognition.onresult=function(e){
@@ -2244,7 +2348,15 @@ document.addEventListener("DOMContentLoaded",function(){
             interim+=(interim?" ":"")+frase.trim();
           }
         }
-        txt.value=(finalText+(interim?" "+interim:"" )).trim();
+
+        const mostrado=(finalText+(interim?" "+interim:"")).trim();
+        txt.value=mostrado;
+
+        /* En cuanto la orden llega como resultado final, guardamos automáticamente. */
+        if(contieneOrdenGuardar(mostrado)){
+          txt.value=quitarOrdenGuardar(mostrado);
+          guardarNota();
+        }
       };
 
       recognition.onerror=function(e){
@@ -2256,11 +2368,12 @@ document.addEventListener("DOMContentLoaded",function(){
       };
 
       recognition.onend=function(){
+        if(guardando)return;
         escuchando=false;
         start.disabled=false;
         stop.disabled=true;
         status.classList.remove("active");
-        if(txt.value.trim())status.textContent="✅ Texto capturado. Puedes revisarlo y guardarlo.";
+        if(txt.value.trim())status.textContent="✅ Texto capturado. Di “guarda nota” para guardarlo.";
       };
 
       try{recognition.start()}
@@ -2268,82 +2381,24 @@ document.addEventListener("DOMContentLoaded",function(){
     };
 
     stop.onclick=parar;
-
-    let guardando=false;
-
-    saveBtn.onclick=function(){
-      /* Evita dobles/múltiples disparos del botón */
-      if(guardando)return;
-      guardando=true;
-      saveBtn.disabled=true;
-      parar();
-
-      const text=txt.value.trim();
-      if(!text){
-        guardando=false;
-        saveBtn.disabled=false;
-        alert("No hay ninguna anotación para guardar.");
-        txt.focus();
-        return;
-      }
-
-      /* Bloqueo adicional por si el navegador dispara el evento varias veces */
-      const lockKey="mi_agenda_voice_save_lock";
-      const now=Date.now();
-      try{
-        const lock=JSON.parse(sessionStorage.getItem(lockKey)||"null");
-        if(lock && lock.text===text && now-Number(lock.time||0)<10000){
-          m.remove();
-          return;
-        }
-        sessionStorage.setItem(lockKey,JSON.stringify({text,time:now}));
-      }catch(e){}
-
-      const x={
-        id:"voz_"+now+"_"+Math.random().toString(36).slice(2,8),
-        type:"tarea",
-        date:today(),
-        time:horaActual(),
-        text:text,
-        note:"Anotación grabada por voz",
-        repeat:false,
-        done:false,
-        priority:"high",
-        voice:true
-      };
-
-      /* No guardar otra nota idéntica creada por voz en los últimos 10 segundos */
-      const duplicada=events.some(e=>
-        e && e.type==="tarea" && e.voice===true &&
-        String(e.text||"").trim()===text &&
-        now-Number(e.voiceSavedAt||0)<10000
-      );
-      if(duplicada){
-        m.remove();
-        return;
-      }
-      x.voiceSavedAt=now;
-
-      events.push(x);
-      save();
-      selected=x.date;
-      view=new Date(x.date+"T12:00:00");
-      m.remove();
-      renderToday();
-      renderNext();
-      renderCalendar();
-      checkAlerts();
-      alert("✅ Nota guardada correctamente.");
-    };
-
-    cancel.onclick=function(){parar();m.remove()};
+    saveBtn.onclick=guardarNota; /* alternativa manual */
+    cancel.onclick=function(){parar();cerrar()};
     txt.focus();
   }
 
-  document.addEventListener("DOMContentLoaded",function(){
+  function enlazarBoton(){
     const b=document.getElementById("voiceNoteBtn");
-    if(b)b.addEventListener("click",abrirNotaVoz);
-  });
+    if(!b || b.dataset.voiceBound==="1")return;
+    b.dataset.voiceBound="1";
+    b.addEventListener("click",abrirNotaVoz);
+  }
+
+  /* Funciona tanto si el script se carga antes como después de DOMContentLoaded */
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",enlazarBoton,{once:true});
+  }else{
+    enlazarBoton();
+  }
 })();
 </script>
 
