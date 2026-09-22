@@ -260,6 +260,51 @@ input:focus,select:focus,textarea:focus{
 .archivoFila .archivoPlus{width:30px;height:30px;padding:0;border-radius:50%;font-size:1.05rem;line-height:1}
 .carpetaCabecera{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .carpetaCabecera h3{margin:0}
+
+/* =========================
+   NOTA POR VOZ
+========================= */
+.voiceNoteBtn{
+  width:100%;
+  margin:8px 0 10px;
+  font-size:1.08rem;
+  font-weight:800;
+  padding:13px 12px;
+  background:linear-gradient(135deg,#00a86b,#00d084);
+  color:#07140f;
+  border:0;
+  box-shadow:0 4px 14px rgba(0,208,132,.22);
+}
+.voiceNoteBtn:active{transform:scale(.98)}
+.voiceModalBox{text-align:center}
+.voiceStatus{
+  min-height:44px;
+  margin:10px 0;
+  padding:10px;
+  border:1px solid var(--bor);
+  border-radius:10px;
+  background:#101010;
+  color:#ddd;
+}
+.voiceTranscript{
+  width:100%;
+  min-height:120px;
+  resize:vertical;
+  box-sizing:border-box;
+  margin-top:8px;
+}
+.voiceMic{
+  font-size:1.15rem;
+  padding:14px;
+}
+.voiceMic.recording{
+  animation:voicePulse 1s infinite;
+}
+@keyframes voicePulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,60,60,.45)}
+  50%{box-shadow:0 0 0 10px rgba(255,60,60,0)}
+}
+
 </style>
 
 </head>
@@ -279,6 +324,7 @@ input:focus,select:focus,textarea:focus{
 <button class="btn out sm" id="next">❯</button>
 </div>
 <button class="btn out" id="todayBtn" style="margin:8px 0 10px">📅 Ir a hoy</button>
+<button class="btn voiceNoteBtn" id="voiceNoteBtn" type="button">🎙️ NOTA POR VOZ</button>
 <div class="calendar" id="calendar"></div>
 </div>
 <div class="card">
@@ -2150,6 +2196,186 @@ document.addEventListener("DOMContentLoaded",function(){
 </script>
 
 
+
+
+<script>
+/* =========================
+   NOTA POR VOZ
+   Convierte la voz en texto y guarda la anotación como Nota de hoy.
+========================= */
+(function(){
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+
+  function fechaHoy(){
+    const d=new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+
+  function escapar(s){
+    return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  }
+
+  function guardarNotaVoz(texto){
+    texto=String(texto||"").trim();
+    if(!texto)return false;
+
+    let a=[];
+    try{
+      const raw=localStorage.getItem("mi_agenda_v5")||"[]";
+      a=JSON.parse(raw);
+      if(!Array.isArray(a))a=[];
+    }catch(e){a=[]}
+
+    a.push({
+      id:"voz_"+Date.now(),
+      type:"tarea",
+      date:fechaHoy(),
+      time:"",
+      text:texto,
+      title:texto,
+      note:"Nota creada mediante voz.",
+      repeat:false,
+      done:false,
+      priority:"high"
+    });
+
+    localStorage.setItem("mi_agenda_v5",JSON.stringify(a));
+
+    if(typeof renderToday==="function")renderToday();
+    if(typeof renderCalendar==="function")renderCalendar();
+    if(typeof renderTareasAgenda==="function")renderTareasAgenda();
+
+    return true;
+  }
+
+  function abrirNotaVoz(){
+    const m=document.createElement("div");
+    m.className="modal";
+
+    m.innerHTML=
+      '<div class="modalbox voiceModalBox">'+
+        '<h2>🎙️ Nota por voz</h2>'+
+        '<div class="sub">Habla y Mi Agenda convertirá tu voz en una nota.</div>'+
+        '<div id="voiceStatus" class="voiceStatus">Pulsa «Empezar a hablar» y habla normalmente.</div>'+
+        '<textarea id="voiceTranscript" class="voiceTranscript" placeholder="Aquí aparecerá lo que digas..."></textarea>'+
+        '<div style="display:grid;gap:7px;margin-top:10px">'+
+          '<button class="btn voiceMic" id="voiceStart">🎙️ Empezar a hablar</button>'+
+          '<button class="btn out" id="voiceSave" style="display:none">💾 Guardar nota</button>'+
+          '<button class="btn out" id="voiceCancel">Cancelar</button>'+
+        '</div>'+
+      '</div>';
+
+    document.body.appendChild(m);
+
+    const status=m.querySelector("#voiceStatus");
+    const transcript=m.querySelector("#voiceTranscript");
+    const start=m.querySelector("#voiceStart");
+    const save=m.querySelector("#voiceSave");
+    const cancel=m.querySelector("#voiceCancel");
+
+    if(!SpeechRecognition){
+      status.innerHTML="⚠️ Este navegador no permite reconocimiento de voz aquí. Prueba Mi Agenda en Chrome/Edge en Android.";
+      start.disabled=true;
+      return;
+    }
+
+    let recognition=null;
+    let escuchando=false;
+    let textoFinal="";
+
+    function crearReconocimiento(){
+      recognition=new SpeechRecognition();
+      recognition.lang="es-ES";
+      recognition.continuous=false;
+      recognition.interimResults=true;
+      recognition.maxAlternatives=1;
+
+      recognition.onstart=function(){
+        escuchando=true;
+        start.classList.add("recording");
+        start.textContent="🔴 Escuchando…";
+        status.textContent="Estoy escuchando. Habla ahora.";
+      };
+
+      recognition.onresult=function(event){
+        let provisional="";
+        for(let i=event.resultIndex;i<event.results.length;i++){
+          const r=event.results[i];
+          if(r.isFinal)textoFinal+=(r[0].transcript+" ");
+          else provisional+=r[0].transcript;
+        }
+        transcript.value=(textoFinal+provisional).trim();
+      };
+
+      recognition.onerror=function(event){
+        escuchando=false;
+        start.classList.remove("recording");
+        start.textContent="🎙️ Empezar a hablar";
+        const mensajes={
+          "not-allowed":"Permiso de micrófono denegado. Activa el micrófono para Mi Agenda.",
+          "no-speech":"No he detectado voz. Vuelve a intentarlo.",
+          "audio-capture":"No se ha podido acceder al micrófono.",
+          "network":"El reconocimiento de voz no está disponible en este momento."
+        };
+        status.textContent="⚠️ "+(mensajes[event.error]||"No se ha podido reconocer la voz. Vuelve a intentarlo.");
+      };
+
+      recognition.onend=function(){
+        escuchando=false;
+        start.classList.remove("recording");
+        start.textContent="🎙️ Empezar a hablar";
+        if(transcript.value.trim()){
+          status.textContent="✓ Voz reconocida. Comprueba la nota o guárdala.";
+          save.style.display="block";
+        }else{
+          status.textContent="Pulsa «Empezar a hablar» para intentarlo de nuevo.";
+        }
+      };
+    }
+
+    start.onclick=function(){
+      if(escuchando){
+        if(recognition)recognition.stop();
+        return;
+      }
+      textoFinal="";
+      transcript.value="";
+      save.style.display="none";
+      crearReconocimiento();
+      try{
+        recognition.start();
+      }catch(e){
+        status.textContent="⚠️ No se ha podido iniciar el micrófono. Vuelve a pulsar el botón.";
+      }
+    };
+
+    save.onclick=function(){
+      const texto=transcript.value.trim();
+      if(!texto){
+        status.textContent="No hay texto que guardar.";
+        return;
+      }
+      if(escuchando&&recognition)recognition.stop();
+      if(guardarNotaVoz(texto)){
+        status.textContent="✓ Nota guardada correctamente.";
+        save.disabled=true;
+        start.disabled=true;
+        setTimeout(()=>m.remove(),700);
+      }
+    };
+
+    cancel.onclick=function(){
+      if(escuchando&&recognition)recognition.stop();
+      m.remove();
+    };
+  }
+
+  document.addEventListener("DOMContentLoaded",function(){
+    const b=document.getElementById("voiceNoteBtn");
+    if(b)b.onclick=abrirNotaVoz;
+  });
+})();
+</script>
 
 </body>
 </html>
