@@ -260,6 +260,10 @@ input:focus,select:focus,textarea:focus{
 .voiceNoteStatus{padding:9px 10px;border-radius:8px;background:var(--item);color:var(--sub);font-size:.8rem;margin:8px 0}
 .voiceNoteStatus.active{color:var(--a);border:1px solid #00e67655}
 .voiceNoteText{min-height:150px;resize:vertical}
+.googleCalendarStatus{padding:9px 10px;border-radius:8px;background:var(--item);color:var(--sub);font-size:.8rem;margin:8px 0}
+.googleCalendarStatus.ok{color:var(--a);border:1px solid #00e6765555}
+.googleCalendarStatus.err{color:var(--red);border:1px solid #ef535055}
+#googleCalendarBtn{font-size:.95rem}
 </style>
 </head>
 <body>
@@ -281,6 +285,14 @@ input:focus,select:focus,textarea:focus{
 <div id="agendaSearchResults" style="display:none;margin:0 0 10px"></div>
 <div style="display:flex;gap:8px;margin:0 0 10px">
 <button class="btn" id="voiceNoteBtn" type="button" style="flex:1;font-size:1rem">🎙️ NOTA POR VOZ</button>
+</div>
+<div class="card" id="googleCalendarCard" style="margin-top:10px">
+  <h3>🗓️ GOOGLE CALENDAR</h3>
+  <div id="googleCalendarStatus" class="googleCalendarStatus">No conectado. Pulsa el botón para conectar tu calendario.</div>
+  <button class="btn" id="googleCalendarBtn" type="button">🔗 CONECTAR GOOGLE CALENDAR</button>
+  <div class="sub" style="margin-top:7px;line-height:1.45">
+    Los eventos se importan en modo <strong>solo lectura</strong> y aparecen en el calendario de Mi Agenda como citas.
+  </div>
 </div>
 <div class="calendar" id="calendar"></div>
 </div>
@@ -1893,6 +1905,246 @@ function borrarUltimaAccionAgenda(){
     events.splice(idx,1);save();renderToday();renderNext();renderCalendar();checkAlerts();alert("🗑️ Anotación borrada.");return true;
   }catch(e){return false;}
 }
+/* =========================
+   GOOGLE CALENDAR — v1.0
+   Conexión en modo solo lectura para Mi Agenda.
+   Usa Google Identity Services + Calendar REST API.
+========================= */
+(function(){
+  if(window.__miAgendaGoogleCalendarLoaded)return;
+  window.__miAgendaGoogleCalendarLoaded=true;
+
+  const CLIENT_ID="756591458890-ngjnr6tn0anudc1p2oufftqfhclu2buf.apps.googleusercontent.com";
+  const SCOPES="https://www.googleapis.com/auth/calendar.readonly";
+  const CALENDAR_ID="primary";
+  const STATE_KEY="mi_agenda_google_calendar_connected";
+
+  let gisReady=false;
+  let tokenClient=null;
+  let accessToken="";
+  let tokenExpiresAt=0;
+  let tokenPromise=null;
+
+  const $g=id=>document.getElementById(id);
+
+  function setStatus(msg,kind=""){
+    const box=$g("googleCalendarStatus");
+    if(!box)return;
+    box.className="googleCalendarStatus"+(kind?" "+kind:"");
+    box.textContent=msg;
+  }
+
+  function ensureButtonState(){
+    const btn=$g("googleCalendarBtn");
+    if(!btn)return;
+    const connected=localStorage.getItem(STATE_KEY)==="1";
+    if(connected){
+      btn.textContent="🔄 SINCRONIZAR GOOGLE CALENDAR";
+    }else{
+      btn.textContent="🔗 CONECTAR GOOGLE CALENDAR";
+    }
+  }
+
+  function loadGIS(){
+    if(gisReady&&window.google&&google.accounts&&google.accounts.oauth2)return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+      if(window.google&&google.accounts&&google.accounts.oauth2){
+        gisReady=true;
+        resolve();
+        return;
+      }
+      const old=document.querySelector('script[data-mi-agenda-gis="1"]');
+      if(old){
+        old.addEventListener("load",()=>{gisReady=true;resolve()},{once:true});
+        old.addEventListener("error",()=>reject(new Error("No se pudo cargar Google Identity Services.")),{once:true});
+        return;
+      }
+      const s=document.createElement("script");
+      s.src="https://accounts.google.com/gsi/client";
+      s.async=true;
+      s.defer=true;
+      s.dataset.miAgendaGis="1";
+      s.onload=()=>{
+        gisReady=true;
+        resolve();
+      };
+      s.onerror=()=>reject(new Error("No se pudo cargar Google Identity Services."));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensureTokenClient(){
+    await loadGIS();
+    if(!tokenClient){
+      tokenClient=google.accounts.oauth2.initTokenClient({
+        client_id:CLIENT_ID,
+        scope:SCOPES,
+        callback:()=>{}
+      });
+    }
+    return tokenClient;
+  }
+
+  function requestToken(prompt=""){
+    if(accessToken && Date.now()<tokenExpiresAt-60000)return Promise.resolve(accessToken);
+    if(tokenPromise)return tokenPromise;
+    tokenPromise=new Promise(async(resolve,reject)=>{
+      try{
+        const client=await ensureTokenClient();
+        client.callback=(resp)=>{
+          tokenPromise=null;
+          if(!resp||resp.error){
+            reject(new Error(resp&&resp.error_description||resp&&resp.error||"No se pudo autorizar Google Calendar."));
+            return;
+          }
+          accessToken=resp.access_token;
+          tokenExpiresAt=Date.now()+Number(resp.expires_in||3600)*1000;
+          localStorage.setItem(STATE_KEY,"1");
+          ensureButtonState();
+          resolve(accessToken);
+        };
+        client.requestAccessToken({prompt});
+      }catch(err){
+        tokenPromise=null;
+        reject(err);
+      }
+    });
+    return tokenPromise;
+  }
+
+  async function fetchJson(url,opts={}){
+    const r=await fetch(url,{
+      ...opts,
+      headers:{
+        ...(opts.headers||{}),
+        Authorization:"Bearer "+accessToken,
+        Accept:"application/json"
+      }
+    });
+    if(!r.ok){
+      let detail="";
+      try{
+        const j=await r.json();
+        detail=j&&j.error&&j.error.message?": "+j.error.message:"";
+      }catch(e){}
+      throw new Error("Google Calendar respondió "+r.status+detail);
+    }
+    return r.json();
+  }
+
+  function isoDateStart(dateString){
+    return dateString+"T00:00:00";
+  }
+
+  function toLocalDateTime(start){
+    if(start&&start.date){
+      return {date:start.date,time:""};
+    }
+    if(start&&start.dateTime){
+      const d=new Date(start.dateTime);
+      if(Number.isNaN(d.getTime()))return {date:today(),time:""};
+      return {
+        date:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),
+        time:String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")
+      };
+    }
+    return {date:today(),time:""};
+  }
+
+  async function listPrimaryEvents(){
+    const hoy=today();
+    const fin=new Date();
+    fin.setDate(fin.getDate()+366);
+    const timeMax=fin.getFullYear()+"-"+String(fin.getMonth()+1).padStart(2,"0")+"-"+String(fin.getDate()).padStart(2,"0")+"T23:59:59";
+    let pageToken="";
+    const all=[];
+
+    do{
+      const params=new URLSearchParams({
+        calendarId:CALENDAR_ID,
+        timeMin:isoDateStart(hoy),
+        timeMax,
+        showDeleted:"false",
+        singleEvents:"true",
+        orderBy:"startTime",
+        maxResults:"2500"
+      });
+      if(pageToken)params.set("pageToken",pageToken);
+      const data=await fetchJson("https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(CALENDAR_ID)+"/events?"+params.toString());
+      (data.items||[]).forEach(e=>all.push(e));
+      pageToken=data.nextPageToken||"";
+    }while(pageToken);
+
+    return all;
+  }
+
+  function convertirEventoGoogle(e){
+    const dt=toLocalDateTime(e.start||{});
+    return {
+      id:"gcal_"+String(e.id||"")+"_"+String(e.start&&e.start.date||e.start&&e.start.dateTime||"").replace(/[^0-9A-Za-z]/g,""),
+      type:"cita",
+      date:dt.date,
+      time:dt.time,
+      text:String(e.summary||"(Sin título)"),
+      note:"Google Calendar · solo lectura",
+      repeat:false,
+      done:false,
+      priority:"normal",
+      googleCalendar:true,
+      googleEventId:String(e.id||""),
+      googleCalendarId:CALENDAR_ID,
+      googleUpdated:String(e.updated||"")
+    };
+  }
+
+  function replaceGoogleEvents(items){
+    const locales=events.filter(e=>!e||e.googleCalendar!==true);
+    const importados=items.map(convertirEventoGoogle).filter(e=>e.text);
+    events=[...locales,...importados];
+    save();
+  }
+
+  async function syncGoogleCalendar(){
+    const btn=$g("googleCalendarBtn");
+    if(btn)btn.disabled=true;
+    setStatus("🔄 Conectando con Google Calendar…");
+    try{
+      const yaConectado=localStorage.getItem(STATE_KEY)==="1";
+      await requestToken(yaConectado?"":"consent");
+      setStatus("🔄 Consultando eventos…");
+      const items=await listPrimaryEvents();
+      replaceGoogleEvents(items);
+      selected=selected||today();
+      renderToday();
+      renderNext();
+      renderCalendar();
+      if(typeof checkAlerts==="function")checkAlerts();
+      localStorage.setItem(STATE_KEY,"1");
+      ensureButtonState();
+      setStatus("✅ Google Calendar conectado. "+items.length+" eventos sincronizados.","ok");
+    }catch(err){
+      console.error(err);
+      setStatus("⚠️ "+String(err&&err.message||err),"err");
+      ensureButtonState();
+    }finally{
+      if(btn)btn.disabled=false;
+    }
+  }
+
+  function init(){
+    const btn=$g("googleCalendarBtn");
+    if(!btn)return;
+    ensureButtonState();
+    if(localStorage.getItem(STATE_KEY)==="1"){
+      setStatus("Cuenta de Google autorizada anteriormente. Pulsa “Sincronizar” para actualizar los eventos.");
+    }
+    btn.addEventListener("click",syncGoogleCalendar);
+  }
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
+  else init();
+})();
+
 /* =========================
    NOTA POR VOZ — v6.0
    Reconocimiento por tramos para Android/Chrome.
