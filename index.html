@@ -1931,6 +1931,7 @@ function borrarUltimaAccionAgenda(){
   const SCOPES="https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly";
   const CALENDAR_ID="primary";
   const STATE_KEY="mi_agenda_google_calendar_connected";
+  const TASKS_SCOPE_KEY="mi_agenda_google_tasks_authorized";
 
   let gisReady=false;
   let tokenClient=null;
@@ -2009,7 +2010,8 @@ function borrarUltimaAccionAgenda(){
     return tokenClient;
   }
 
-  function requestToken(prompt=""){
+  function requestToken(prompt="",force=false){
+    if(force){ accessToken=""; tokenExpiresAt=0; }
     if(accessToken && Date.now()<tokenExpiresAt-60000)return Promise.resolve(accessToken);
     if(tokenPromise)return tokenPromise;
     tokenPromise=new Promise(async(resolve,reject)=>{
@@ -2243,7 +2245,7 @@ function borrarUltimaAccionAgenda(){
       const yaConectado=localStorage.getItem(STATE_KEY)==="1";
       await requestToken(yaConectado?"":"consent");
       setStatus("🔄 Consultando eventos…");
-      const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
+      const {items,tasks}=await cargarGoogleConTareas();
       replaceGoogleEvents(items,tasks);
       selected=selected||today();
       renderToday();
@@ -2262,17 +2264,33 @@ function borrarUltimaAccionAgenda(){
     }
   }
 
+  async function cargarGoogleConTareas(){
+    await requestToken("none");
+    try{
+      const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
+      return {items,tasks};
+    }catch(err){
+      const msg=String(err&&err.message||err);
+      // El token antiguo puede tener solo Calendar readonly. Al añadir Tasks
+      // Google exige conceder el nuevo alcance una vez.
+      if((/Google Calendar respondió (401|403)/).test(msg) && localStorage.getItem(TASKS_SCOPE_KEY)!="1"){
+        console.warn("El permiso de Google Tasks aún no está concedido. Solicitando autorización una sola vez.");
+        const fresh=await requestToken("consent",true);
+        const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
+        localStorage.setItem(TASKS_SCOPE_KEY,"1");
+        return {items,tasks};
+      }
+      throw err;
+    }
+  }
+
   async function autoSync(){
     if(localStorage.getItem(STATE_KEY)!=="1")return;
     const btn=$g("googleCalendarBtn");
     if(btn)btn.disabled=true;
     setStatus("🔄 Actualizando Google Calendar…");
     try{
-      // Renovación totalmente silenciosa: nunca abre el selector de cuenta al arrancar.
-      // Si el token guardado sigue vigente, ni siquiera contactamos con Google OAuth.
-      // Si ha caducado, Google intenta renovarlo sin interacción del usuario.
-      await requestToken("none");
-      const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
+      const {items,tasks}=await cargarGoogleConTareas();
       replaceGoogleEvents(items,tasks);
       selected=selected||today();
       renderToday();
@@ -2283,9 +2301,7 @@ function borrarUltimaAccionAgenda(){
       setStatus("✅ Google Calendar y Tareas actualizados. "+items.length+" eventos + "+tasks.length+" tareas.","ok");
     }catch(err){
       console.warn("Sincronización automática de Google Calendar no disponible:",err);
-      /* No interrumpimos al usuario al abrir la Agenda ni mostramos el selector de cuenta.
-         Si Google exige interacción, la conexión manual queda disponible en Ajustes. */
-      setStatus("Google Calendar conectado. Se actualizará al autorizar de nuevo desde Ajustes.");
+      setStatus("Google Calendar conectado. No se pudieron actualizar las tareas todavía.");
       ensureButtonState();
     }finally{
       if(btn)btn.disabled=false;
