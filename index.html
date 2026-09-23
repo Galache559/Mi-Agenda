@@ -1938,6 +1938,17 @@ function borrarUltimaAccionAgenda(){
   let tokenExpiresAt=0;
   let tokenPromise=null;
 
+  // Conservamos temporalmente el token entre aperturas de la Agenda.
+  // Así no se vuelve a abrir el selector de cuenta mientras el token siga vigente.
+  try{
+    const savedToken=localStorage.getItem("mi_agenda_google_access_token")||"";
+    const savedExpiry=Number(localStorage.getItem("mi_agenda_google_access_token_expires")||0);
+    if(savedToken && savedExpiry>Date.now()+60000){
+      accessToken=savedToken;
+      tokenExpiresAt=savedExpiry;
+    }
+  }catch(e){}
+
   const $g=id=>document.getElementById(id);
 
   function setStatus(msg,kind=""){
@@ -2012,6 +2023,10 @@ function borrarUltimaAccionAgenda(){
           }
           accessToken=resp.access_token;
           tokenExpiresAt=Date.now()+Number(resp.expires_in||3600)*1000;
+          try{
+            localStorage.setItem("mi_agenda_google_access_token",accessToken);
+            localStorage.setItem("mi_agenda_google_access_token_expires",String(tokenExpiresAt));
+          }catch(e){}
           localStorage.setItem(STATE_KEY,"1");
           ensureButtonState();
           resolve(accessToken);
@@ -2205,10 +2220,10 @@ function borrarUltimaAccionAgenda(){
     if(btn)btn.disabled=true;
     setStatus("🔄 Actualizando Google Calendar…");
     try{
-      /* Renovación realmente silenciosa: nunca abre el selector de cuenta al arrancar.
-         Si Google no permite renovar sin interacción, dejamos la Agenda funcionando
-         y la autorización manual queda disponible en Ajustes. */
-      await requestToken("");
+      // Renovación totalmente silenciosa: nunca abre el selector de cuenta al arrancar.
+      // Si el token guardado sigue vigente, ni siquiera contactamos con Google OAuth.
+      // Si ha caducado, Google intenta renovarlo sin interacción del usuario.
+      await requestToken("none");
       const items=await listPrimaryEvents();
       replaceGoogleEvents(items);
       selected=selected||today();
