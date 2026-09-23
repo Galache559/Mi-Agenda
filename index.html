@@ -2072,27 +2072,62 @@ function borrarUltimaAccionAgenda(){
     const fin=new Date();
     fin.setDate(fin.getDate()+366);
     fin.setHours(23,59,59,999);
+    const timeMin=isoDateStart(hoy);
     const timeMax=fin.toISOString();
     let pageToken="";
     const all=[];
 
-    do{
-      const params=new URLSearchParams({
-        calendarId:CALENDAR_ID,
-        timeMin:isoDateStart(hoy),
-        timeMax,
-        showDeleted:"false",
-        singleEvents:"true",
-        orderBy:"startTime",
-        maxResults:"2500"
-      });
-      if(pageToken)params.set("pageToken",pageToken);
-      const data=await fetchJson("https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(CALENDAR_ID)+"/events?"+params.toString());
-      (data.items||[]).forEach(e=>all.push(e));
-      pageToken=data.nextPageToken||"";
-    }while(pageToken);
+    // Primero usamos el calendario principal.
+    // Si Gemini/Asistente ha guardado la nota en otro calendario del mismo
+    // usuario, también lo detectamos para no dejar fuera la nota recién creada.
+    let calendars=[{id:CALENDAR_ID}];
+    try{
+      const lc=await fetchJson("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&showDeleted=false&maxResults=250");
+      const extra=(lc.items||[])
+        .filter(c=>c&&c.id&&c.id!==CALENDAR_ID)
+        .map(c=>({id:String(c.id),summary:String(c.summary||"")}));
+      calendars=calendars.concat(extra);
+    }catch(err){
+      console.warn("No se pudo consultar la lista de calendarios; se usará el principal.",err);
+    }
 
-    return all;
+    for(const cal of calendars){
+      pageToken="";
+      do{
+        const params=new URLSearchParams({
+          calendarId:cal.id,
+          timeMin,
+          timeMax,
+          showDeleted:"false",
+          singleEvents:"true",
+          orderBy:"startTime",
+          maxResults:"2500"
+        });
+        if(pageToken)params.set("pageToken",pageToken);
+        try{
+          const data=await fetchJson("https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(cal.id)+"/events?"+params.toString());
+          (data.items||[]).forEach(e=>{
+            e.__miAgendaCalendarId=cal.id;
+            e.__miAgendaCalendarName=cal.summary||"";
+            all.push(e);
+          });
+          pageToken=data.nextPageToken||"";
+        }catch(err){
+          console.warn("No se pudo leer el calendario "+cal.id,err);
+          pageToken="";
+        }
+      }while(pageToken);
+    }
+
+    // Evitamos duplicados si un mismo evento aparece por alguna configuración
+    // compartida de calendarios.
+    const seen=new Set();
+    return all.filter(e=>{
+      const k=String(e.id||"")+"|"+String(e.start&&((e.start.date)||(e.start.dateTime))||"");
+      if(seen.has(k))return false;
+      seen.add(k);
+      return true;
+    });
   }
 
   function convertirEventoGoogle(e){
@@ -2109,7 +2144,8 @@ function borrarUltimaAccionAgenda(){
       priority:"normal",
       googleCalendar:true,
       googleEventId:String(e.id||""),
-      googleCalendarId:CALENDAR_ID,
+      googleCalendarId:String(e.__miAgendaCalendarId||CALENDAR_ID),
+      googleCalendarName:String(e.__miAgendaCalendarName||"Calendario principal"),
       googleUpdated:String(e.updated||"")
     };
   }
@@ -2154,8 +2190,10 @@ function borrarUltimaAccionAgenda(){
     if(btn)btn.disabled=true;
     setStatus("🔄 Actualizando Google Calendar…");
     try{
-      /* Renovación silenciosa: no muestra la ventana de Google al abrir la Agenda. */
-      await requestToken("");
+      /* Renovación realmente silenciosa: nunca abre el selector de cuenta al arrancar.
+         Si Google no permite renovar sin interacción, dejamos la Agenda funcionando
+         y la autorización manual queda disponible en Ajustes. */
+      await requestToken("none");
       const items=await listPrimaryEvents();
       replaceGoogleEvents(items);
       selected=selected||today();
@@ -2167,7 +2205,8 @@ function borrarUltimaAccionAgenda(){
       setStatus("✅ Google Calendar actualizado. "+items.length+" eventos sincronizados.","ok");
     }catch(err){
       console.warn("Sincronización automática de Google Calendar no disponible:",err);
-      /* No interrumpimos al usuario al abrir la Agenda. La conexión manual queda disponible en Ajustes. */
+      /* No interrumpimos al usuario al abrir la Agenda ni mostramos el selector de cuenta.
+         Si Google exige interacción, la conexión manual queda disponible en Ajustes. */
       setStatus("Google Calendar conectado. Se actualizará al autorizar de nuevo desde Ajustes.");
       ensureButtonState();
     }finally{
