@@ -1894,8 +1894,10 @@ function borrarUltimaAccionAgenda(){
   }catch(e){return false;}
 }
 /* =========================
-   NOTA POR VOZ — v5.0
-   Escucha directa + control de duplicados + orden de voz
+   NOTA POR VOZ — v6.0
+   Reconocimiento por tramos para Android/Chrome.
+   Cada resultado final sustituye al provisional; nunca se concatena
+   el mismo resultado acumulativo varias veces.
 ========================= */
 (function(){
   if(window.__miAgendaVoiceModuleLoaded)return;
@@ -1907,12 +1909,48 @@ function borrarUltimaAccionAgenda(){
     return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
   }
 
-  function normalizarOrden(s){
-    return String(s||"")
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+  function normalizar(s){
+    return String(s||"").toLowerCase().normalize("NFD")
+      .replace(/[\u0300-\u036f]/g,"")
       .replace(/[¿?¡!.,;:]+/g," ")
       .replace(/\s+/g," ").trim();
+  }
+
+  function limpiarEspacios(s){
+    return String(s||"").replace(/\s+/g," ").trim();
+  }
+
+  /* Une dos tramos sin repetir palabras que Chrome ya haya devuelto. */
+  function unirTramos(base,nuevo){
+    base=limpiarEspacios(base);
+    nuevo=limpiarEspacios(nuevo);
+    if(!base)return nuevo;
+    if(!nuevo)return base;
+    const a=normalizar(base),b=normalizar(nuevo);
+    if(a===b)return base;
+    if(b.startsWith(a))return nuevo;
+    if(a.startsWith(b))return base;
+
+    const at=a.split(" "),bt=b.split(" ");
+    let sol=0;
+    for(let n=Math.min(at.length,bt.length);n>=1;n--){
+      if(at.slice(-n).join(" ")===bt.slice(0,n).join(" ")){
+        sol=n;
+        break;
+      }
+    }
+    const np=nuevo.split(/\s+/);
+    return limpiarEspacios(base+" "+np.slice(sol).join(" "));
+  }
+
+  function quitarOrdenGuardar(s){
+    return limpiarEspacios(String(s||"")
+      .replace(/\s*(?:guarda|guardar)\s+notas?\b[.!?,;:]?\s*$/i,""));
+  }
+
+  function contieneOrdenGuardar(s){
+    const n=normalizar(s);
+    return /(?:^|\s)(?:guarda|guardar)\s+notas?(?:\s|$)/i.test(n);
   }
 
   function abrirNotaVoz(){
@@ -1937,100 +1975,39 @@ function borrarUltimaAccionAgenda(){
 
     let recognition=null;
     let escuchando=false;
+    let reinicioProgramado=false;
     let guardando=false;
-    let reiniciando=false;
+    let cancelado=false;
     let finalText="";
-    let ultimoFinal="";
-    let ultimoInterim="";
+    let interimText="";
 
     if(!SpeechRecognition){
-      status.innerHTML="⚠️ Este navegador no permite reconocimiento de voz. Puedes escribir la nota manualmente.";
+      status.innerHTML="⚠️ Este navegador no permite reconocimiento de voz.";
       return;
     }
 
     function cerrar(){
+      cancelado=true;
       guardando=true;
-      try{if(recognition){recognition.onend=null;recognition.onerror=null;recognition.stop()}}catch(e){}
+      try{
+        if(recognition){
+          recognition.onend=null;
+          recognition.onerror=null;
+          recognition.stop();
+        }
+      }catch(e){}
       m.remove();
     }
 
     function parar(){
       escuchando=false;
-      reiniciando=false;
       try{if(recognition)recognition.stop()}catch(e){}
       status.classList.remove("active");
     }
 
-    /* Añade solo la parte nueva de una transcripción.
-       Chrome móvil puede devolver: "cita", después "cita para", después
-       "cita para mañana llamar...". No debemos concatenar esas repeticiones. */
-    function limpiarRepeticiones(s){
-      let palabras=String(s||"").trim().split(/\s+/).filter(Boolean);
-      if(palabras.length<2)return palabras.join(" ");
-      let cambio=true;
-      while(cambio){
-        cambio=false;
-        for(let tam=Math.min(10,Math.floor(palabras.length/2));tam>=1;tam--){
-          for(let i=0;i+tam*2<=palabras.length;i++){
-            const a=palabras.slice(i,i+tam).map(normalizarOrden).join(" ");
-            const b=palabras.slice(i+tam,i+tam*2).map(normalizarOrden).join(" ");
-            if(a&&a===b){
-              palabras.splice(i+tam,tam);
-              cambio=true;
-              break;
-            }
-          }
-          if(cambio)break;
-        }
-      }
-      return palabras.join(" ");
-    }
-
-    function añadirSinDuplicar(base,nuevo){
-      nuevo=limpiarRepeticiones(nuevo);
-      base=limpiarRepeticiones(base);
-      if(!nuevo)return base;
-      if(!base)return nuevo;
-      const a=normalizarOrden(base),b=normalizarOrden(nuevo);
-      if(!b)return base;
-      if(a===b)return base;
-      /* Si el navegador devuelve una versión ampliada de lo anterior,
-         la versión ampliada sustituye a la anterior, nunca se concatena. */
-      if(b.startsWith(a))return nuevo;
-      if(a.startsWith(b))return base;
-      if(b.includes(a)&&a.length>8)return nuevo;
-      if(a.includes(b)&&b.length>8)return base;
-
-      const bt=b.split(" "),at=a.split(" ");
-      let solapamiento=0;
-      for(let n=Math.min(at.length,bt.length);n>0;n--){
-        if(at.slice(-n).join(" ")===bt.slice(0,n).join(" ")){
-          solapamiento=n;
-          break;
-        }
-      }
-      const extra=nuevo.split(/\s+/).slice(solapamiento).join(" ");
-      return limpiarRepeticiones(base+(extra?" "+extra:""));
-    }
-
-    function quitarOrdenGuardar(s){
-      return String(s||"")
-        .replace(/\s*(?:guarda|guardar)\s+nota\s*[.!?,;:]?\s*$/i,"")
-        .trim();
-    }
-
-    function contieneOrdenGuardar(s){
-      const n=normalizarOrden(s);
-      return /(?:^|\s)(?:guarda|guardar)\s+nota(?:\s|$)/i.test(n) ||
-             /(?:^|\s)guarda\s+notas?(?:\s|$)/i.test(n);
-    }
-
-    function horaVoz(texto){
-      const raw=normalizarOrden(texto);
-      const m=raw.match(/\ba\s+las\s+(\d{1,2})(?:\s+y\s+(\d{1,2}))?\b/);
-      if(!m)return null;
-      const h=Number(m[1]),min=m[2]?Number(m[2]):0;
-      return h<=23&&min<=59?String(h).padStart(2,"0")+":"+String(min).padStart(2,"0"):null;
+    function mostrar(){
+      txt.value=limpiarEspacios(finalText+(interimText?" "+interimText:""));
+      return txt.value;
     }
 
     const meses={
@@ -2061,18 +2038,18 @@ function borrarUltimaAccionAgenda(){
     }
 
     function fechaVoz(texto){
-      const raw=normalizarOrden(texto);
+      const raw=normalizar(texto);
       const hoy=new Date();
       const hoyBase=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),12);
       if(/\bpasado manana\b/.test(raw))return addDays(today(),2);
       if(/\bmanana\b/.test(raw))return addDays(today(),1);
       if(/\bhoy\b/.test(raw))return today();
 
-      let diaSemana=raw.match(/\b(?:el\s+|este\s+|proximo\s+|siguiente\s+)?(domingo|lunes|martes|miercoles|jueves|viernes|sabado)(?:\s+que\s+viene)?\b/);
-      if(diaSemana){
+      let dsem=raw.match(/\b(?:el\s+|este\s+|proximo\s+|siguiente\s+)?(domingo|lunes|martes|miercoles|jueves|viernes|sabado)(?:\s+que\s+viene)?\b/);
+      if(dsem){
         const previo=raw.match(/\b(proximo|siguiente|este)\s+(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)\b/);
-        const queViene=/\b(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)\s+que\s+viene\b/.test(raw);
-        const f=siguienteDiaSemana(diaSemana[1],queViene?"proximo":(previo?previo[1]:"el"));
+        const viene=/\b(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)\s+que\s+viene\b/.test(raw);
+        const f=siguienteDiaSemana(dsem[1],viene?"proximo":(previo?previo[1]:"el"));
         if(f)return f;
       }
 
@@ -2128,7 +2105,7 @@ function borrarUltimaAccionAgenda(){
         const dia=Number(m[1]);
         if(dia>=1&&dia<=31){
           let d=new Date(hoy.getFullYear(),hoy.getMonth(),dia,12);
-          if(d<hoyBase)d=new Date(hoy.getFullYear(),hoy.getMonth()+1,dia);
+          if(d<hoyBase)d=new Date(hoy.getFullYear(),hoy.getMonth()+1,dia,12);
           if(d.getDate()===dia)return fechaFormateada(d);
         }
       }
@@ -2136,61 +2113,77 @@ function borrarUltimaAccionAgenda(){
     }
     window.fechaVozGlobalAgenda=fechaVoz;
 
+    function horaVoz(texto){
+      const raw=normalizar(texto);
+      const m=raw.match(/\ba\s+las\s+(\d{1,2})(?:\s+y\s+(\d{1,2}))?\b/);
+      if(!m)return null;
+      const h=Number(m[1]),min=m[2]?Number(m[2]):0;
+      return h<=23&&min<=59?String(h).padStart(2,"0")+":"+String(min).padStart(2,"0"):null;
+    }
+
     function limpiarProgramacionVoz(s){
       let x=String(s||"");
-      x=x.replace(/\s*(?:guarda|guardar)\s+nota\s*[.!?,;:]?\s*$/i,"");
+      x=x.replace(/\s*(?:guarda|guardar)\s+notas?\b[.!?,;:]?\s*$/i,"");
       x=x.replace(/\b(?:pasado\s+mañana|pasado\s+manana|mañana|manana|hoy)\b/gi,"");
       x=x.replace(/\b(?:el\s+)?(?:proximo|siguiente|este)\s+(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)(?:\s+que\s+viene)?\b/gi,"");
       x=x.replace(/\b(?:el\s+)?(?:domingo|lunes|martes|miercoles|jueves|viernes|sabado)\s+que\s+viene\b/gi,"");
       x=x.replace(/\b(?:el\s+)?(?:dia\s+)?\d{1,2}\s*(?:[\/\-]\s*\d{1,2}(?:\s*[\/\-]\s*\d{2,4})?|de\s+[a-z]+(?:\s+de\s+\d{4})?|del\s+(?:mes\s+que\s+viene|proximo\s+mes|siguiente\s+mes))\b/gi,"");
       x=x.replace(/\ba\s+las\s+\d{1,2}(?:\s+y\s+\d{1,2})?\s*(?:horas?)?\b/gi,"");
       x=x.replace(/\b(?:horas?|h)\b/gi,"");
-      x=x.replace(/\bpara\s*[,.;:]+\s*/gi,"para ");
-      return limpiarRepeticiones(x).replace(/\s{2,}/g," ").replace(/^\s*[,.;:-]+|[,.;:-]+\s*$/g,"").trim();
+      return limpiarEspacios(x).replace(/^\s*[,.;:-]+|[,.;:-]+\s*$/g,"");
     }
 
     function guardarNota(){
       if(guardando)return;
-      const textoOriginal=quitarOrdenGuardar(txt.value.trim());
+      const textoOriginal=quitarOrdenGuardar(txt.value);
       if(!textoOriginal){
         status.textContent="⚠️ No hay ninguna anotación para guardar.";
         return;
       }
+
+      /* La fecha y la hora se calculan ANTES de quitar “mañana” y “a las 14”. */
       const fechaNota=fechaVoz(textoOriginal);
-      let text=limpiarProgramacionVoz(textoOriginal)||textoOriginal;
+      const horaNota=horaVoz(textoOriginal)||horaActual();
+      const text=limpiarProgramacionVoz(textoOriginal)||textoOriginal;
       const now=Date.now();
-      const lockKey="mi_agenda_voice_save_lock";
 
-      try{
-        const lock=JSON.parse(sessionStorage.getItem(lockKey)||"null");
-        if(lock&&lock.text===text&&now-Number(lock.time||0)<10000){cerrar();return;}
-        sessionStorage.setItem(lockKey,JSON.stringify({text,time:now}));
-      }catch(e){}
-
-      const duplicada=events.some(e=>e&&e.type==="tarea"&&e.voice===true&&String(e.text||"").trim()===text&&now-Number(e.voiceSavedAt||0)<10000);
+      const duplicada=events.some(e=>
+        e&&e.type==="tarea"&&e.voice===true&&
+        String(e.text||"").trim()===text&&
+        String(e.date||"")===fechaNota&&
+        String(e.time||"")===horaNota&&
+        now-Number(e.voiceSavedAt||0)<15000
+      );
       if(duplicada){cerrar();return;}
 
       guardando=true;
       parar();
       const x={
         id:"voz_"+now+"_"+Math.random().toString(36).slice(2,8),
-        type:"tarea",date:fechaNota,time:horaVoz(textoOriginal)||horaActual(),text:text,
-        note:"Anotación grabada por voz",repeat:false,done:false,priority:"high",voice:true,voiceSavedAt:now
+        type:"tarea",date:fechaNota,time:horaNota,text:text,
+        note:"Anotación grabada por voz",repeat:false,done:false,
+        priority:"high",voice:true,voiceSavedAt:now
       };
       events.push(x);
       save();
       selected=x.date;
       view=new Date(x.date+"T12:00:00");
-      renderToday();renderNext();renderCalendar();checkAlerts();
+      renderToday();
+      renderNext();
+      renderCalendar();
+      checkAlerts();
       cerrar();
-      setTimeout(()=>alert("✅ Nota guardada correctamente."),50);
+      setTimeout(()=>alert("✅ Nota guardada correctamente para "+fmt(x.date)+(x.time?" a las "+x.time:"")),80);
     }
 
     function iniciar(){
-      if(!SpeechRecognition||guardando||escuchando||reiniciando||!document.body.contains(m))return;
+      if(!SpeechRecognition||guardando||escuchando||reinicioProgramado||cancelado||!document.body.contains(m))return;
+      reinicioProgramado=false;
       recognition=new SpeechRecognition();
       recognition.lang="es-ES";
-      recognition.continuous=true;
+      /* CLAVE: en Android/Chrome usamos sesiones cortas. continuous=true
+         devuelve resultados acumulativos y provoca las repeticiones de la captura. */
+      recognition.continuous=false;
       recognition.interimResults=true;
       recognition.maxAlternatives=1;
 
@@ -2201,23 +2194,20 @@ function borrarUltimaAccionAgenda(){
       };
 
       recognition.onresult=function(e){
-        let nuevoFinal="",nuevoInterim="";
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          const frase=limpiarRepeticiones(String(e.results[i][0].transcript||""));
-          if(!frase)continue;
-          if(e.results[i].isFinal)nuevoFinal=añadirSinDuplicar(nuevoFinal,frase);
-          else nuevoInterim=añadirSinDuplicar(nuevoInterim,frase);
+        const r=e.results[e.resultIndex];
+        if(!r||!r[0])return;
+        const frase=limpiarEspacios(r[0].transcript||"");
+        if(!frase)return;
+
+        if(r.isFinal){
+          finalText=unirTramos(finalText,frase);
+          interimText="";
+        }else{
+          interimText=frase;
         }
 
-        if(nuevoFinal)finalText=añadirSinDuplicar(finalText,nuevoFinal);
-        ultimoFinal=nuevoFinal;
-        ultimoInterim=nuevoInterim;
-        const mostrado=limpiarRepeticiones(
-          añadirSinDuplicar(finalText,nuevoInterim)
-        );
-        txt.value=mostrado;
-
-        if(contieneOrdenGuardar(mostrado)||contieneOrdenGuardar(ultimoFinal)||contieneOrdenGuardar(ultimoInterim)){
+        const mostrado=mostrar();
+        if(contieneOrdenGuardar(mostrado)||contieneOrdenGuardar(frase)){
           txt.value=quitarOrdenGuardar(mostrado);
           guardarNota();
         }
@@ -2230,25 +2220,30 @@ function borrarUltimaAccionAgenda(){
           status.textContent="⚠️ El micrófono no tiene permiso.";
           return;
         }
-        if(!guardando&&!document.body.contains(m))return;
-        reiniciando=true;
-        setTimeout(()=>{reiniciando=false;if(!guardando&&document.body.contains(m))iniciar()},350);
+        if(!guardando&&!cancelado){
+          reinicioProgramado=true;
+          setTimeout(()=>{reinicioProgramado=false;if(!guardando&&!cancelado&&document.body.contains(m))iniciar()},350);
+        }
       };
 
       recognition.onend=function(){
-        if(guardando||!document.body.contains(m))return;
         escuchando=false;
         status.classList.remove("active");
-        reiniciando=true;
-        status.textContent="🔄 Continuando escucha…";
-        setTimeout(()=>{reiniciando=false;if(!guardando&&document.body.contains(m))iniciar()},250);
+        if(guardando||cancelado||!document.body.contains(m))return;
+        reinicioProgramado=true;
+        status.textContent="🔄 Preparando la siguiente frase…";
+        setTimeout(()=>{reinicioProgramado=false;if(!guardando&&!cancelado&&document.body.contains(m))iniciar()},220);
       };
 
       try{recognition.start()}
-      catch(e){escuchando=false;reiniciando=false;status.textContent="⚠️ No se pudo iniciar el micrófono.";}
+      catch(e){
+        escuchando=false;
+        reinicioProgramado=false;
+        setTimeout(()=>{if(!guardando&&!cancelado&&document.body.contains(m))iniciar()},400);
+      }
     }
 
-    cancel.onclick=function(){parar();cerrar()};
+    cancel.onclick=function(){cancelado=true;parar();cerrar()};
     txt.focus();
     iniciar();
   }
