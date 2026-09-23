@@ -2279,6 +2279,18 @@ function borrarUltimaAccionAgenda(){
       setStatus("🔄 Consultando eventos…");
       const {items,tasks}=await cargarGoogleConTareas();
       replaceGoogleEvents(items,tasks);
+      // Tras sincronizar, si el día actual no contiene ninguno de los elementos
+      // recién importados de Google, seleccionamos el próximo día con evento/tarea
+      // de Google para que la nota recién creada quede visible inmediatamente.
+      const googleImportados=[...items.map(convertirEventoGoogle),...tasks.map(convertirTareaGoogle).filter(Boolean)]
+        .filter(e=>e&&e.date)
+        .sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+      const hoyLocal=today();
+      const diaGoogle=googleImportados.find(e=>e.date>=hoyLocal);
+      if(diaGoogle && !googleImportados.some(e=>e.date===selected)){
+        selected=diaGoogle.date;
+        view=new Date(selected+'T12:00:00');
+      }
       selected=selected||today();
       renderToday();
       renderNext();
@@ -2333,6 +2345,18 @@ function borrarUltimaAccionAgenda(){
     try{
       const {items,tasks}=await cargarGoogleConTareas();
       replaceGoogleEvents(items,tasks);
+      // Tras sincronizar, si el día actual no contiene ninguno de los elementos
+      // recién importados de Google, seleccionamos el próximo día con evento/tarea
+      // de Google para que la nota recién creada quede visible inmediatamente.
+      const googleImportados=[...items.map(convertirEventoGoogle),...tasks.map(convertirTareaGoogle).filter(Boolean)]
+        .filter(e=>e&&e.date)
+        .sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+      const hoyLocal=today();
+      const diaGoogle=googleImportados.find(e=>e.date>=hoyLocal);
+      if(diaGoogle && !googleImportados.some(e=>e.date===selected)){
+        selected=diaGoogle.date;
+        view=new Date(selected+'T12:00:00');
+      }
       selected=selected||today();
       renderToday();
       renderNext();
