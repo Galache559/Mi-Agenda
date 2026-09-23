@@ -2062,7 +2062,7 @@ function borrarUltimaAccionAgenda(){
         const j=await r.json();
         detail=j&&j.error&&j.error.message?": "+j.error.message:"";
       }catch(e){}
-      throw new Error("Google Calendar respondió "+r.status+detail);
+      throw new Error("Google API respondió "+r.status+detail);
     }
     return r.json();
   }
@@ -2270,15 +2270,12 @@ function borrarUltimaAccionAgenda(){
   }
 
   async function cargarGoogleConTareas(){
-    // El permiso de Tasks es un alcance OAuth independiente del de Calendar.
-    // Lo solicitamos de forma explícita una sola vez en esta versión, en lugar
-    // de esperar a que una llamada 403 lo descubra. Esto evita que el flujo
-    // silencioso deje la Agenda funcionando con un token que solo tiene Calendar.
+    // IMPORTANTE: si acabamos de conceder Tasks, el token guardado en localStorage
+    // puede seguir siendo el token antiguo que solo contenía Calendar.
+    // En ese caso requestToken("") lo reutilizaría y Tasks devolvería 403.
+    // Forzamos una NUEVA emisión silenciosa del token con los dos scopes ya concedidos.
     if(localStorage.getItem(TASKS_SCOPE_KEY)!=="1"){
-      // No forzamos "consent" ni reiniciamos el token: el permiso de Tasks
-      // ya puede haber sido concedido en la pantalla anterior. Google mantiene
-      // el consentimiento y devuelve el token combinado.
-      await requestToken("");
+      await requestToken("",true);
       const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
       localStorage.setItem(TASKS_SCOPE_KEY,"1");
       return {items,tasks};
