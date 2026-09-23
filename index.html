@@ -2155,7 +2155,7 @@ function borrarUltimaAccionAgenda(){
     setStatus("🔄 Actualizando Google Calendar…");
     try{
       /* Renovación silenciosa: no muestra la ventana de Google al abrir la Agenda. */
-      await requestToken("none");
+      await requestToken("");
       const items=await listPrimaryEvents();
       replaceGoogleEvents(items);
       selected=selected||today();
@@ -2202,9 +2202,9 @@ function borrarUltimaAccionAgenda(){
       // Si Gemini añade un evento al Calendar mientras Mi Agenda estaba abierta,
       // al volver a la Agenda hacemos una nueva sincronización automática.
       document.addEventListener("visibilitychange",()=>{
-        if(!document.hidden)lanzarAutoSync();
+        if(!document.hidden)setTimeout(lanzarAutoSync,1200);
       });
-      window.addEventListener("focus",lanzarAutoSync);
+      window.addEventListener("focus",()=>setTimeout(lanzarAutoSync,1200));
     }else{
       setStatus("Google Calendar todavía no está conectado.");
     }
