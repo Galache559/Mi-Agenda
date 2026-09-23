@@ -375,12 +375,7 @@ input:focus,select:focus,textarea:focus{
 <div id="estadoImportArchivo" class="sub" style="margin-top:8px"></div>
 <input id="file" type="file" accept=".json" style="display:none">
 </div>
-<div class="card" id="googleCalendarSettingsCard">
-<h2>🗓️ Google Calendar</h2>
-<div id="googleCalendarStatus" class="sub" style="margin:8px 0">Comprobando conexión…</div>
-<button class="btn out" id="googleCalendarBtn" type="button">🔗 CONECTAR GOOGLE CALENDAR</button>
-<div class="sub" style="margin-top:8px;line-height:1.45">Los eventos se incorporan automáticamente a Mi Agenda en modo solo lectura.</div>
-</div>
+
 <div class="card">
 <h2>ℹ️ Mi Agenda</h2>
 <p style="color:var(--sub);font-size:.78rem;line-height:1.5">
@@ -2156,13 +2151,36 @@ function borrarUltimaAccionAgenda(){
     }
   }
 
+  let ultimaAutoSync=0;
+
+  function lanzarAutoSync(){
+    if(localStorage.getItem(STATE_KEY)!=="1")return;
+    const ahora=Date.now();
+    // Evitamos varias consultas seguidas si el usuario cambia de pestaña/ventana.
+    if(ahora-ultimaAutoSync<30000)return;
+    ultimaAutoSync=ahora;
+    autoSync();
+  }
+
   function init(){
     const btn=$g("googleCalendarBtn");
-    if(!btn)return;
-    ensureButtonState();
-    btn.addEventListener("click",syncGoogleCalendar);
+
+    // El bloque visual de Google Calendar ya no se muestra en la Agenda.
+    // La sincronización NO debe depender de que exista ese botón.
+    if(btn){
+      ensureButtonState();
+      btn.addEventListener("click",syncGoogleCalendar);
+    }
+
     if(localStorage.getItem(STATE_KEY)==="1"){
-      autoSync();
+      lanzarAutoSync();
+
+      // Si Gemini añade un evento al Calendar mientras Mi Agenda estaba abierta,
+      // al volver a la Agenda hacemos una nueva sincronización automática.
+      document.addEventListener("visibilitychange",()=>{
+        if(!document.hidden)lanzarAutoSync();
+      });
+      window.addEventListener("focus",lanzarAutoSync);
     }else{
       setStatus("Google Calendar todavía no está conectado.");
     }
