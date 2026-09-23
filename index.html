@@ -2316,7 +2316,7 @@ function borrarUltimaAccionAgenda(){
       // Si el permiso se revocó o el token dejó de incluir Tasks, lo pedimos de nuevo.
       if((/Google Calendar respondió (401|403)/).test(msg)){
         console.warn("El permiso de Google Tasks necesita renovarse.");
-        const fresh=await requestToken("",true);
+        const fresh=await requestToken("");
         const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
         localStorage.setItem(TASKS_SCOPE_KEY,"1");
         return {items,tasks};
