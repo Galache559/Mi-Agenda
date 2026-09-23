@@ -2030,6 +2030,11 @@ function borrarUltimaAccionAgenda(){
             localStorage.setItem("mi_agenda_google_access_token_expires",String(tokenExpiresAt));
           }catch(e){}
           localStorage.setItem(STATE_KEY,"1");
+          // Si Google devuelve ambos alcances, ya no necesitamos volver a pedir consentimiento.
+          const granted=String(resp.scope||"");
+          if(granted.indexOf("https://www.googleapis.com/auth/tasks.readonly")!==-1){
+            localStorage.setItem(TASKS_SCOPE_KEY,"1");
+          }
           ensureButtonState();
           resolve(accessToken);
         };
@@ -2270,12 +2275,15 @@ function borrarUltimaAccionAgenda(){
     // de esperar a que una llamada 403 lo descubra. Esto evita que el flujo
     // silencioso deje la Agenda funcionando con un token que solo tiene Calendar.
     if(localStorage.getItem(TASKS_SCOPE_KEY)!=="1"){
-      await requestToken("consent",true);
+      // No forzamos "consent" ni reiniciamos el token: el permiso de Tasks
+      // ya puede haber sido concedido en la pantalla anterior. Google mantiene
+      // el consentimiento y devuelve el token combinado.
+      await requestToken("");
       const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
       localStorage.setItem(TASKS_SCOPE_KEY,"1");
       return {items,tasks};
     }
-    await requestToken("none");
+    await requestToken("");
     try{
       const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
       return {items,tasks};
@@ -2284,7 +2292,7 @@ function borrarUltimaAccionAgenda(){
       // Si el permiso se revocó o el token dejó de incluir Tasks, lo pedimos de nuevo.
       if((/Google Calendar respondió (401|403)/).test(msg)){
         console.warn("El permiso de Google Tasks necesita renovarse.");
-        const fresh=await requestToken("consent",true);
+        const fresh=await requestToken("");
         const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
         localStorage.setItem(TASKS_SCOPE_KEY,"1");
         return {items,tasks};
