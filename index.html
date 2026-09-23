@@ -643,6 +643,8 @@ function renderToday(){renderDailyReport();}
    PRÓXIMOS AVISOS
 ========================= */
 function renderNext(){
+ const box=$("nextList");
+ if(!box)return;
  let t=today(),
  manana=addDays(t,1),
  pasado=addDays(t,2);
@@ -657,7 +659,7 @@ function renderNext(){
    )
   );
  if(!a.length){
-  $("nextList").innerHTML=
+  box.innerHTML=
    '<div class="empty">'+
    'No hay avisos para mañana ni pasado mañana. 👍'+
    '</div>';
@@ -701,7 +703,7 @@ function renderNext(){
     '</div>';
   });
  });
- $("nextList").innerHTML=html;
+ box.innerHTML=html;
 }
 /* =========================
    CALENDARIO
