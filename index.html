@@ -2246,13 +2246,23 @@ function borrarUltimaAccionAgenda(){
 
   let ultimaAutoSync=0;
 
-  function lanzarAutoSync(){
+  function lanzarAutoSync(forzado=false){
     if(localStorage.getItem(STATE_KEY)!=="1")return;
     const ahora=Date.now();
-    // Evitamos varias consultas seguidas si el usuario cambia de pestaña/ventana.
-    if(ahora-ultimaAutoSync<30000)return;
+    // En una apertura normal permitimos una nueva consulta cada 30 s.
+    // Las llamadas forzadas se usan durante unos segundos tras abrir/volver a la app,
+    // porque Google Calendar puede tardar un poco en publicar un evento recién creado por Gemini.
+    if(!forzado && ahora-ultimaAutoSync<30000)return;
     ultimaAutoSync=ahora;
     autoSync();
+  }
+
+  function programarSincronizacionInicial(){
+    if(localStorage.getItem(STATE_KEY)!=="1")return;
+    // Primera consulta inmediata y tres reintentos silenciosos.
+    // No mostramos selector de cuenta: reutilizamos el token guardado.
+    lanzarAutoSync(true);
+    [2500,7000,15000].forEach(ms=>setTimeout(()=>lanzarAutoSync(true),ms));
   }
 
   function init(){
@@ -2266,14 +2276,20 @@ function borrarUltimaAccionAgenda(){
     }
 
     if(localStorage.getItem(STATE_KEY)==="1"){
-      lanzarAutoSync();
+      programarSincronizacionInicial();
 
       // Si Gemini añade un evento al Calendar mientras Mi Agenda estaba abierta,
       // al volver a la Agenda hacemos una nueva sincronización automática.
       document.addEventListener("visibilitychange",()=>{
-        if(!document.hidden)setTimeout(lanzarAutoSync,1200);
+        if(!document.hidden){
+          setTimeout(()=>lanzarAutoSync(true),1200);
+          setTimeout(()=>lanzarAutoSync(true),5000);
+        }
       });
-      window.addEventListener("focus",()=>setTimeout(lanzarAutoSync,1200));
+      window.addEventListener("focus",()=>{
+        setTimeout(()=>lanzarAutoSync(true),1200);
+        setTimeout(()=>lanzarAutoSync(true),5000);
+      });
     }else{
       setStatus("Google Calendar todavía no está conectado.");
     }
