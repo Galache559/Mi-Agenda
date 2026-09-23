@@ -2068,31 +2068,48 @@ function borrarUltimaAccionAgenda(){
   }
 
   async function listPrimaryEvents(){
-    const hoy=today();
+    // Ventana amplia para no perder eventos creados por Gemini/Asistente
+    // por diferencias de zona horaria o por eventos recién creados.
+    const inicio=new Date();
+    inicio.setDate(inicio.getDate()-7);
+    inicio.setHours(0,0,0,0);
     const fin=new Date();
-    fin.setDate(fin.getDate()+366);
+    fin.setDate(fin.getDate()+730);
     fin.setHours(23,59,59,999);
-    const timeMin=isoDateStart(hoy);
+    const timeMin=inicio.toISOString();
     const timeMax=fin.toISOString();
-    let pageToken="";
+    const calendars=[];
+    let calendarPageToken="";
+
+    // Recuperamos TODOS los calendarios de la cuenta, no solo la primera página.
+    do{
+      const params=new URLSearchParams({
+        minAccessRole:"reader",
+        showDeleted:"false",
+        showHidden:"true",
+        maxResults:"250"
+      });
+      if(calendarPageToken)params.set("pageToken",calendarPageToken);
+      try{
+        const lc=await fetchJson("https://www.googleapis.com/calendar/v3/users/me/calendarList?"+params.toString());
+        (lc.items||[]).forEach(c=>{
+          if(c&&c.id&&!calendars.some(x=>x.id===String(c.id))){
+            calendars.push({id:String(c.id),summary:String(c.summary||"")});
+          }
+        });
+        calendarPageToken=lc.nextPageToken||"";
+      }catch(err){
+        console.warn("No se pudo consultar la lista de calendarios",err);
+        calendarPageToken="";
+      }
+    }while(calendarPageToken);
+
+    // El calendario principal siempre debe estar incluido.
+    if(!calendars.some(c=>c.id===CALENDAR_ID))calendars.unshift({id:CALENDAR_ID,summary:"Calendario principal"});
+
     const all=[];
-
-    // Primero usamos el calendario principal.
-    // Si Gemini/Asistente ha guardado la nota en otro calendario del mismo
-    // usuario, también lo detectamos para no dejar fuera la nota recién creada.
-    let calendars=[{id:CALENDAR_ID}];
-    try{
-      const lc=await fetchJson("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&showDeleted=false&maxResults=250");
-      const extra=(lc.items||[])
-        .filter(c=>c&&c.id&&c.id!==CALENDAR_ID)
-        .map(c=>({id:String(c.id),summary:String(c.summary||"")}));
-      calendars=calendars.concat(extra);
-    }catch(err){
-      console.warn("No se pudo consultar la lista de calendarios; se usará el principal.",err);
-    }
-
     for(const cal of calendars){
-      pageToken="";
+      let pageToken="";
       do{
         const params=new URLSearchParams({
           calendarId:cal.id,
@@ -2119,11 +2136,9 @@ function borrarUltimaAccionAgenda(){
       }while(pageToken);
     }
 
-    // Evitamos duplicados si un mismo evento aparece por alguna configuración
-    // compartida de calendarios.
     const seen=new Set();
     return all.filter(e=>{
-      const k=String(e.id||"")+"|"+String(e.start&&((e.start.date)||(e.start.dateTime))||"");
+      const k=String(e.id||"")+"|"+String(e.__miAgendaCalendarId||"")+"|"+String(e.start&&((e.start.date)||(e.start.dateTime))||"");
       if(seen.has(k))return false;
       seen.add(k);
       return true;
@@ -2193,7 +2208,7 @@ function borrarUltimaAccionAgenda(){
       /* Renovación realmente silenciosa: nunca abre el selector de cuenta al arrancar.
          Si Google no permite renovar sin interacción, dejamos la Agenda funcionando
          y la autorización manual queda disponible en Ajustes. */
-      await requestToken("none");
+      await requestToken("");
       const items=await listPrimaryEvents();
       replaceGoogleEvents(items);
       selected=selected||today();
