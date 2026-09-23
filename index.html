@@ -1931,7 +1931,7 @@ function borrarUltimaAccionAgenda(){
   const SCOPES="https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly";
   const CALENDAR_ID="primary";
   const STATE_KEY="mi_agenda_google_calendar_connected";
-  const TASKS_SCOPE_KEY="mi_agenda_google_tasks_authorized";
+  const TASKS_SCOPE_KEY="mi_agenda_google_tasks_authorized_v2";
 
   let gisReady=false;
   let tokenClient=null;
@@ -2265,16 +2265,25 @@ function borrarUltimaAccionAgenda(){
   }
 
   async function cargarGoogleConTareas(){
+    // El permiso de Tasks es un alcance OAuth independiente del de Calendar.
+    // Lo solicitamos de forma explícita una sola vez en esta versión, en lugar
+    // de esperar a que una llamada 403 lo descubra. Esto evita que el flujo
+    // silencioso deje la Agenda funcionando con un token que solo tiene Calendar.
+    if(localStorage.getItem(TASKS_SCOPE_KEY)!=="1"){
+      await requestToken("consent",true);
+      const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
+      localStorage.setItem(TASKS_SCOPE_KEY,"1");
+      return {items,tasks};
+    }
     await requestToken("none");
     try{
       const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
       return {items,tasks};
     }catch(err){
       const msg=String(err&&err.message||err);
-      // El token antiguo puede tener solo Calendar readonly. Al añadir Tasks
-      // Google exige conceder el nuevo alcance una vez.
-      if((/Google Calendar respondió (401|403)/).test(msg) && localStorage.getItem(TASKS_SCOPE_KEY)!="1"){
-        console.warn("El permiso de Google Tasks aún no está concedido. Solicitando autorización una sola vez.");
+      // Si el permiso se revocó o el token dejó de incluir Tasks, lo pedimos de nuevo.
+      if((/Google Calendar respondió (401|403)/).test(msg)){
+        console.warn("El permiso de Google Tasks necesita renovarse.");
         const fresh=await requestToken("consent",true);
         const [items,tasks]=await Promise.all([listPrimaryEvents(),listGoogleTasks()]);
         localStorage.setItem(TASKS_SCOPE_KEY,"1");
