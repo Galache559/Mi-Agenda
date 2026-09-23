@@ -260,10 +260,6 @@ input:focus,select:focus,textarea:focus{
 .voiceNoteStatus{padding:9px 10px;border-radius:8px;background:var(--item);color:var(--sub);font-size:.8rem;margin:8px 0}
 .voiceNoteStatus.active{color:var(--a);border:1px solid #00e67655}
 .voiceNoteText{min-height:150px;resize:vertical}
-.googleCalendarStatus{padding:9px 10px;border-radius:8px;background:var(--item);color:var(--sub);font-size:.8rem;margin:8px 0}
-.googleCalendarStatus.ok{color:var(--a);border:1px solid #00e6765555}
-.googleCalendarStatus.err{color:var(--red);border:1px solid #ef535055}
-#googleCalendarBtn{font-size:.95rem}
 </style>
 </head>
 <body>
@@ -285,14 +281,6 @@ input:focus,select:focus,textarea:focus{
 <div id="agendaSearchResults" style="display:none;margin:0 0 10px"></div>
 <div style="display:flex;gap:8px;margin:0 0 10px">
 <button class="btn" id="voiceNoteBtn" type="button" style="flex:1;font-size:1rem">🎙️ NOTA POR VOZ</button>
-</div>
-<div class="card" id="googleCalendarCard" style="margin-top:10px">
-  <h3>🗓️ GOOGLE CALENDAR</h3>
-  <div id="googleCalendarStatus" class="googleCalendarStatus">No conectado. Pulsa el botón para conectar tu calendario.</div>
-  <button class="btn" id="googleCalendarBtn" type="button">🔗 CONECTAR GOOGLE CALENDAR</button>
-  <div class="sub" style="margin-top:7px;line-height:1.45">
-    Los eventos se importan en modo <strong>solo lectura</strong> y aparecen en el calendario de Mi Agenda como citas.
-  </div>
 </div>
 <div class="calendar" id="calendar"></div>
 </div>
@@ -386,6 +374,12 @@ input:focus,select:focus,textarea:focus{
 <input id="archivoBackupFile" type="file" accept=".json,application/json" style="display:none">
 <div id="estadoImportArchivo" class="sub" style="margin-top:8px"></div>
 <input id="file" type="file" accept=".json" style="display:none">
+</div>
+<div class="card" id="googleCalendarSettingsCard">
+<h2>🗓️ Google Calendar</h2>
+<div id="googleCalendarStatus" class="sub" style="margin:8px 0">Comprobando conexión…</div>
+<button class="btn out" id="googleCalendarBtn" type="button">🔗 CONECTAR GOOGLE CALENDAR</button>
+<div class="sub" style="margin-top:8px;line-height:1.45">Los eventos se incorporan automáticamente a Mi Agenda en modo solo lectura.</div>
 </div>
 <div class="card">
 <h2>ℹ️ Mi Agenda</h2>
@@ -1905,10 +1899,10 @@ function borrarUltimaAccionAgenda(){
   }catch(e){return false;}
 }
 /* =========================
-   GOOGLE CALENDAR — v1.1
+   GOOGLE CALENDAR — v1.2
    Conexión en modo solo lectura para Mi Agenda.
    Usa Google Identity Services + Calendar REST API.
-   v1.1: timestamps RFC3339 corregidos para evitar error 400.
+   v1.2: bloque principal eliminado; sincronización automática al abrir la Agenda y control manual solo en Ajustes.
 ========================= */
 (function(){
   if(window.__miAgendaGoogleCalendarLoaded)return;
@@ -2135,14 +2129,43 @@ function borrarUltimaAccionAgenda(){
     }
   }
 
+  async function autoSync(){
+    if(localStorage.getItem(STATE_KEY)!=="1")return;
+    const btn=$g("googleCalendarBtn");
+    if(btn)btn.disabled=true;
+    setStatus("🔄 Actualizando Google Calendar…");
+    try{
+      /* Renovación silenciosa: no muestra la ventana de Google al abrir la Agenda. */
+      await requestToken("none");
+      const items=await listPrimaryEvents();
+      replaceGoogleEvents(items);
+      selected=selected||today();
+      renderToday();
+      renderNext();
+      renderCalendar();
+      if(typeof checkAlerts==="function")checkAlerts();
+      ensureButtonState();
+      setStatus("✅ Google Calendar actualizado. "+items.length+" eventos sincronizados.","ok");
+    }catch(err){
+      console.warn("Sincronización automática de Google Calendar no disponible:",err);
+      /* No interrumpimos al usuario al abrir la Agenda. La conexión manual queda disponible en Ajustes. */
+      setStatus("Google Calendar conectado. Se actualizará al autorizar de nuevo desde Ajustes.");
+      ensureButtonState();
+    }finally{
+      if(btn)btn.disabled=false;
+    }
+  }
+
   function init(){
     const btn=$g("googleCalendarBtn");
     if(!btn)return;
     ensureButtonState();
-    if(localStorage.getItem(STATE_KEY)==="1"){
-      setStatus("Cuenta de Google autorizada anteriormente. Pulsa “Sincronizar” para actualizar los eventos.");
-    }
     btn.addEventListener("click",syncGoogleCalendar);
+    if(localStorage.getItem(STATE_KEY)==="1"){
+      autoSync();
+    }else{
+      setStatus("Google Calendar todavía no está conectado.");
+    }
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
