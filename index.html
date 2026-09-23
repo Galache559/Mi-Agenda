@@ -2158,6 +2158,33 @@ function borrarUltimaAccionAgenda(){
       }while(pageToken);
     }
 
+    // Diagnóstico/fallback: Google puede indexar una nota creada por Gemini bajo
+    // un recurso que no aparece en el listado cronológico esperado. Hacemos una
+    // búsqueda textual en cada calendario para localizar títulos recientes.
+    // No altera los resultados normales; solo añade coincidencias que Calendar API
+    // encuentre explícitamente.
+    for(const cal of calendars){
+      try{
+        const qp=new URLSearchParams({
+          calendarId:cal.id,
+          timeMin,
+          timeMax,
+          q:"Llamar al médico",
+          showDeleted:"false",
+          singleEvents:"true",
+          maxResults:"2500"
+        });
+        const hit=await fetchJson("https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(cal.id)+"/events?"+qp.toString());
+        (hit.items||[]).forEach(e=>{
+          e.__miAgendaCalendarId=cal.id;
+          e.__miAgendaCalendarName=cal.summary||"";
+          all.push(e);
+        });
+      }catch(err){
+        console.warn("Búsqueda textual de Calendar no disponible",err);
+      }
+    }
+
     const seen=new Set();
     return all.filter(e=>{
       const k=String(e.id||"")+"|"+String(e.__miAgendaCalendarId||"")+"|"+String(e.start&&((e.start.date)||(e.start.dateTime))||"");
