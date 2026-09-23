@@ -609,7 +609,6 @@ function renderMonthlyReport(){
   const a=filteredEvents(mes,monthFilter),box=$("monthList");
   if(!box)return;
   box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay '+esc(typeLabel(monthFilter).replace(/^.*? /,""))+' previstos en este mes.</div>';
-  bindCards(box);
 }
 function renderAnnualReport(){
   const y=new Date().getFullYear();
@@ -620,7 +619,6 @@ function renderAnnualReport(){
   const a=filteredEvents(lista,annualFilter),box=$("annualList");
   if(!box)return;
   box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay '+esc(typeLabel(annualFilter).replace(/^.*? /,""))+' previstos en este año.</div>';
-  bindCards(box);
 }
 /* =========================
    INFORME DIARIO
@@ -639,7 +637,6 @@ function renderDailyReport(){
   }
   const box=$("dayList"); if(!box)return;
   box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay nada previsto para este día.</div>';
-  bindCards(box);
 }
 function renderToday(){renderDailyReport();}
 /* =========================
