@@ -1906,9 +1906,10 @@ function borrarUltimaAccionAgenda(){
   }catch(e){return false;}
 }
 /* =========================
-   GOOGLE CALENDAR — v1.0
+   GOOGLE CALENDAR — v1.1
    Conexión en modo solo lectura para Mi Agenda.
    Usa Google Identity Services + Calendar REST API.
+   v1.1: timestamps RFC3339 corregidos para evitar error 400.
 ========================= */
 (function(){
   if(window.__miAgendaGoogleCalendarLoaded)return;
@@ -2033,7 +2034,10 @@ function borrarUltimaAccionAgenda(){
   }
 
   function isoDateStart(dateString){
-    return dateString+"T00:00:00";
+    // Google Calendar exige timestamps RFC3339 completos.
+    // Convertimos la medianoche local de Mi Agenda a ISO (UTC).
+    const d=new Date(dateString+"T00:00:00");
+    return d.toISOString();
   }
 
   function toLocalDateTime(start){
@@ -2055,7 +2059,8 @@ function borrarUltimaAccionAgenda(){
     const hoy=today();
     const fin=new Date();
     fin.setDate(fin.getDate()+366);
-    const timeMax=fin.getFullYear()+"-"+String(fin.getMonth()+1).padStart(2,"0")+"-"+String(fin.getDate()).padStart(2,"0")+"T23:59:59";
+    fin.setHours(23,59,59,999);
+    const timeMax=fin.toISOString();
     let pageToken="";
     const all=[];
 
