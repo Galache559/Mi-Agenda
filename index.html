@@ -77,9 +77,9 @@ label{font-size:.75rem;color:var(--sub)}
 .actions button{background:#333;color:#fff;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;font-size:.7rem;cursor:pointer;min-height:36px}
 .todaybox{border-left:4px solid var(--a);padding-left:11px;margin-bottom:12px}
 .bigday{font-size:1.25rem;font-weight:bold;text-transform:capitalize}
-.todaySummary{display:flex;gap:7px;margin:8px 0 0;flex-wrap:wrap}
-.todayBadge{background:var(--item);border:1px solid var(--bor);border-radius:7px;padding:6px 9px;font-size:.68rem;color:var(--sub)}
-.todayBadge strong{color:#fff;font-size:.82rem;margin-right:3px}
+.todaySummary{display:flex;align-items:center;gap:8px;margin:7px 0 0;white-space:nowrap;overflow:hidden;font-size:.66rem;color:var(--sub)}
+.todayBadge{background:transparent;border:0;border-radius:0;padding:0;font-size:.66rem;color:var(--sub);display:inline-flex;align-items:center}
+.todayBadge strong{color:#fff;font-size:.78rem;margin-right:2px}
 .quickrow{display:flex;gap:7px;margin-top:10px}
 .quickrow .btn{flex:1}
 .hoySectionTitle{display:flex;justify-content:space-between;align-items:center;font-size:.7rem;color:var(--sub);margin:9px 0 6px;text-transform:uppercase;font-weight:bold}
@@ -262,6 +262,16 @@ input:focus,select:focus,textarea:focus{
 </style>
 
 <style>
+/* Botón HOY más visible */
+#todayBtn{
+  background:linear-gradient(180deg,#d9ff4a 0%,var(--a) 100%);
+  color:#101500;
+  border:1px solid #efffb0;
+  font-weight:900;
+  box-shadow:0 2px 0 #6d8d00, 0 0 10px #a6d40066;
+  text-shadow:0 1px 0 #ffffff55;
+}
+#todayBtn:hover{transform:translateY(-1px);box-shadow:0 3px 0 #6d8d00,0 0 13px #a6d40088}
 .archivoCompacto{display:flex;flex-direction:column;gap:5px}
 .archivoFila{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;background:var(--item);border-radius:8px;font-size:.8rem}
 .archivoFila .archivoTitulo{font-weight:700;min-width:0}
@@ -749,11 +759,13 @@ function renderDailyReport(){
     const lista=allEvents().filter(e=>e.date===fecha)
       .sort((a,b)=>(String(a.time||"")+"|"+String(a.text||"")).localeCompare(String(b.time||"")+"|"+String(b.text||"")));
 
+    if(!lista.length) return '';
+
     return '<div class="report3day">'+
       '<div class="report3dayTitle">'+
         '<strong>'+nombres[i]+'</strong> · '+fechaTexto(fecha)+
       '</div>'+
-      (lista.length?lista.map(card).join(""):'<div class="empty">No hay nada previsto para este día.</div>')+
+      lista.map(card).join("")+
     '</div>';
   }).join("");
 
