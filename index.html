@@ -779,7 +779,7 @@ function renderDailyReport(){
 
   const summary=$("dailySummary");
   if(summary){
-    const lista=allEvents().filter(e=>e.date===selected);
+    const lista=allEvents().filter(e=>fechas.includes(e.date));
     const c={cita:lista.filter(e=>e.type==="cita").length,medico:lista.filter(e=>e.type==="medico").length,cumple:lista.filter(e=>e.type==="cumple").length,viaje:lista.filter(e=>e.type==="viaje").length,nota:lista.filter(e=>e.type==="tarea").length};
     summary.innerHTML='<span class="todayBadge"><strong>'+c.cita+'</strong> Citas</span><span class="todayBadge"><strong>'+c.medico+'</strong> Médico</span><span class="todayBadge"><strong>'+c.cumple+'</strong> Cumple</span><span class="todayBadge"><strong>'+c.viaje+'</strong> Viajes</span><span class="todayBadge"><strong>'+c.nota+'</strong> Notas</span>';
   }
