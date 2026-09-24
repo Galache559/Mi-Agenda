@@ -244,8 +244,21 @@ input:focus,select:focus,textarea:focus{
   nav button{font-size:.62rem}
   .calendar{gap:2px}
   .cal{height:50px}
+  #monthTitle{font-size:1rem}
+  #todayBtn{font-size:.72rem}
 }
 .archivoCustomCard h3{margin-bottom:8px}.archivoCustomCard{border-color:var(--bor)}
+.report3day{margin:0 0 12px}
+.report3dayTitle{
+  padding:9px 10px;
+  margin-bottom:7px;
+  border-radius:9px;
+  background:#20252a;
+  color:var(--a);
+  font-size:.84rem;
+  text-transform:capitalize;
+}
+.report3day:last-child{margin-bottom:0}
 </style>
 
 <style>
@@ -280,30 +293,32 @@ input:focus,select:focus,textarea:focus{
 <section id="agenda" class="tab active">
 <div id="notice" class="notice"></div>
 <div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<div style="display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:6px;align-items:center;margin-bottom:8px">
 <button class="btn out sm" id="prev">❮</button>
-<h2 id="monthTitle" style="margin:0;text-align:center;flex:1"></h2>
+<div style="display:flex;align-items:center;justify-content:center;gap:7px;min-width:0">
+<h2 id="monthTitle" style="margin:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></h2>
+<button class="btn out sm" id="todayBtn" type="button" title="Ir a hoy" style="padding:5px 9px">Hoy</button>
+</div>
 <button class="btn out sm" id="next">❯</button>
 </div>
-<button class="btn out" id="todayBtn" style="margin:8px 0 6px">📅 Ir a hoy</button>
 <div style="display:flex;gap:6px;margin:0 0 8px">
 <input id="agendaSearch" type="search" placeholder="🔎 Buscar en Mi Agenda…" autocomplete="off" style="flex:1;min-width:0">
 <button class="btn out sm" id="agendaSearchClear" type="button" title="Limpiar búsqueda">✕</button>
 </div>
 <div id="agendaSearchResults" style="display:none;margin:0 0 10px"></div>
 <div style="display:flex;gap:8px;margin:0 0 10px">
-<button class="btn" id="voiceNoteBtn" type="button" style="flex:1;font-size:1rem">🎙️ NOTA POR VOZ</button>
+<button class="btn" id="voiceNoteBtn" type="button" style="flex:1;font-size:.95rem">🎙️ NOTA POR VOZ</button>
+<button class="btn out" id="dayNew" type="button" style="flex:1;font-size:.95rem">📝 NOTA ESCRITA</button>
 </div>
 <div class="calendar" id="calendar"></div>
 </div>
 <div class="card">
-<h2>📊 INFORME DIARIO</h2>
+<h2>📊 INFORME 3 DÍAS</h2>
 <div class="todaybox">
 <div class="bigday" id="dayTitle"></div>
 <div class="todaySummary" id="dailySummary"></div>
 </div>
 <div id="dayList"></div>
-<button class="btn" id="dayNew">➕ Nueva anotación</button>
 </div>
 <div class="card">
 <h2>📊 INFORME MENSUAL</h2>
@@ -662,7 +677,7 @@ function typeLabel(type){
   .replace(/_/g," ");
 }
 
-function getReportTypes(){return ["cita","medico","cumple","viaje"];}
+function getReportTypes(){return ["cita","medico","cumple","viaje","tarea"];}
 
 function setupMonthFilters(){
   const box=$("monthFilters"); if(!box)return;
@@ -688,7 +703,7 @@ function renderMonthlyReport(){
   const finFecha=y+"-"+String(m+1).padStart(2,"0")+"-"+String(new Date(y,m+1,0).getDate()).padStart(2,"0");
   setupMonthFilters();
   const title=$("monthReportTitle");
-  if(title)title.textContent=view.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+  if(title)title.textContent=(view.toLocaleDateString("es-ES",{month:"long"}))+"-"+view.getFullYear();
   const mes=allEvents().filter(e=>e.date>=inicio&&e.date<=finFecha)
     .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
   const a=filteredEvents(mes,monthFilter),box=$("monthList");
@@ -719,16 +734,45 @@ function renderAnnualReport(){
 ========================= */
 
 function renderDailyReport(){
-  const d=new Date(selected+"T12:00:00"),title=$("dayTitle");
-  if(title)title.textContent=d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-  const a=allEvents().filter(e=>e.date===selected).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  const box=$("dayList");
+  if(!box)return;
+
+  const base=new Date(selected+"T12:00:00");
+  const fechas=[0,1,2].map(n=>addDays(selected,n));
+  const nombres=["Día seleccionado","Mañana","Pasado mañana"];
+
+  const fechaTexto=d=>new Date(d+"T12:00:00").toLocaleDateString("es-ES",{
+    weekday:"long",day:"numeric",month:"long",year:"numeric"
+  });
+
+  const bloques=fechas.map((fecha,i)=>{
+    const lista=allEvents().filter(e=>e.date===fecha)
+      .sort((a,b)=>(String(a.time||"")+"|"+String(a.text||"")).localeCompare(String(b.time||"")+"|"+String(b.text||"")));
+
+    return '<div class="report3day">'+
+      '<div class="report3dayTitle">'+
+        '<strong>'+nombres[i]+'</strong> · '+fechaTexto(fecha)+
+      '</div>'+
+      (lista.length?lista.map(card).join(""):'<div class="empty">No hay nada previsto para este día.</div>')+
+    '</div>';
+  }).join("");
+
+  const title=$("dayTitle");
+  if(title){
+    const nums=fechas.map(f=>new Date(f+"T12:00:00").getDate());
+    const mes=base.toLocaleDateString("es-ES",{month:"long"});
+    const anio=base.getFullYear();
+    title.textContent=nums.join("-")+" "+mes+" "+anio;
+  }
+
   const summary=$("dailySummary");
   if(summary){
-    const c={cita:a.filter(e=>e.type==="cita").length,medico:a.filter(e=>e.type==="medico").length,cumple:a.filter(e=>e.type==="cumple").length,viaje:a.filter(e=>e.type==="viaje").length,nota:a.filter(e=>e.type==="tarea").length};
-    summary.innerHTML='<span class="todayBadge"><strong>'+c.cita+'</strong> Citas</span><span class="todayBadge"><strong>'+c.medico+'</strong> Médico</span><span class="todayBadge"><strong>'+c.cumple+'</strong> Cumple</span><span class="todayBadge"><strong>'+c.viaje+'</strong> Viajes</span>'+(c.nota?'<span class="todayBadge"><strong>'+c.nota+'</strong> Notas</span>':'');
+    const lista=allEvents().filter(e=>e.date===selected);
+    const c={cita:lista.filter(e=>e.type==="cita").length,medico:lista.filter(e=>e.type==="medico").length,cumple:lista.filter(e=>e.type==="cumple").length,viaje:lista.filter(e=>e.type==="viaje").length,nota:lista.filter(e=>e.type==="tarea").length};
+    summary.innerHTML='<span class="todayBadge"><strong>'+c.cita+'</strong> Citas</span><span class="todayBadge"><strong>'+c.medico+'</strong> Médico</span><span class="todayBadge"><strong>'+c.cumple+'</strong> Cumple</span><span class="todayBadge"><strong>'+c.viaje+'</strong> Viajes</span><span class="todayBadge"><strong>'+c.nota+'</strong> Notas</span>';
   }
-  const box=$("dayList"); if(!box)return;
-  box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay nada previsto para este día.</div>';
+
+  box.innerHTML=bloques;
   bindCards(box);
 }
 function renderToday(){renderDailyReport();}
