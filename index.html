@@ -91,6 +91,10 @@ label{font-size:.75rem;color:var(--sub)}
 .nextitem{background:var(--item);border-radius:7px;padding:9px;margin-bottom:5px;font-size:.82rem}
 .nexttime{color:var(--sub);font-size:.7rem}
 .nexttext{margin-top:2px}
+.report3day{margin:0 0 8px}
+.report3dayTitle{font-size:.88rem;font-weight:bold;color:var(--a);padding:5px 0 3px;border-bottom:1px solid var(--bor);margin-bottom:5px}
+.report3day .item,.report3day .event,.report3day .eventCard{margin-bottom:4px}
+
 .notice{background:#332900;border:1px solid var(--yel);color:#fff;border-radius:8px;padding:10px;margin-bottom:10px;display:none}
 .notice strong{color:var(--yel)}
 .notice .noticeitem{margin-top:5px;padding-left:2px}
@@ -324,10 +328,6 @@ input:focus,select:focus,textarea:focus{
 </div>
 <div class="card">
 <h2>📊 INFORME 3 DÍAS</h2>
-<div class="todaybox">
-<div class="bigday" id="dayTitle"></div>
-<div class="todaySummary" id="dailySummary"></div>
-</div>
 <div id="dayList"></div>
 </div>
 <div class="card">
@@ -747,42 +747,24 @@ function renderDailyReport(){
   const box=$("dayList");
   if(!box)return;
 
-  const base=new Date(selected+"T12:00:00");
   const fechas=[0,1,2].map(n=>addDays(selected,n));
-  const nombres=["Día seleccionado","Mañana","Pasado mañana"];
 
-  const fechaTexto=d=>new Date(d+"T12:00:00").toLocaleDateString("es-ES",{
-    weekday:"long",day:"numeric",month:"long",year:"numeric"
-  });
+  const fechaTexto=d=>{
+    const fecha=new Date(d+"T12:00:00");
+    const dia=fecha.toLocaleDateString("es-ES",{weekday:"long"});
+    const numero=fecha.getDate();
+    return dia.charAt(0).toUpperCase()+dia.slice(1)+" "+numero;
+  };
 
-  const bloques=fechas.map((fecha,i)=>{
+  const bloques=fechas.map(fecha=>{
     const lista=allEvents().filter(e=>e.date===fecha)
       .sort((a,b)=>(String(a.time||"")+"|"+String(a.text||"")).localeCompare(String(b.time||"")+"|"+String(b.text||"")));
 
-    if(!lista.length) return '';
-
     return '<div class="report3day">'+
-      '<div class="report3dayTitle">'+
-        '<strong>'+nombres[i]+'</strong> · '+fechaTexto(fecha)+
-      '</div>'+
-      lista.map(card).join("")+
+      '<div class="report3dayTitle">'+fechaTexto(fecha)+'</div>'+
+      (lista.length ? lista.map(card).join("") : '')+
     '</div>';
   }).join("");
-
-  const title=$("dayTitle");
-  if(title){
-    const nums=fechas.map(f=>new Date(f+"T12:00:00").getDate());
-    const mes=base.toLocaleDateString("es-ES",{month:"long"});
-    const anio=base.getFullYear();
-    title.textContent=nums.join("-")+" "+mes+" "+anio;
-  }
-
-  const summary=$("dailySummary");
-  if(summary){
-    const lista=allEvents().filter(e=>fechas.includes(e.date));
-    const c={cita:lista.filter(e=>e.type==="cita").length,medico:lista.filter(e=>e.type==="medico").length,cumple:lista.filter(e=>e.type==="cumple").length,viaje:lista.filter(e=>e.type==="viaje").length,nota:lista.filter(e=>e.type==="tarea").length};
-    summary.innerHTML='<span class="todayBadge"><strong>'+c.cita+'</strong> Citas</span><span class="todayBadge"><strong>'+c.medico+'</strong> Médico</span><span class="todayBadge"><strong>'+c.cumple+'</strong> Cumple</span><span class="todayBadge"><strong>'+c.viaje+'</strong> Viajes</span><span class="todayBadge"><strong>'+c.nota+'</strong> Notas</span>';
-  }
 
   box.innerHTML=bloques;
   bindCards(box);
