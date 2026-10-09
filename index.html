@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<link rel="manifest" href="./manifest.webmanifest">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Mi Agenda</title>
@@ -2770,6 +2771,18 @@ function borrarUltimaAccionAgenda(){
     enlazarBoton();
   }
 })();
+</script>
+
+
+<script>
+/* Mi Agenda: activa el funcionamiento sin conexión en GitHub Pages/HTTPS. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./service-worker.js').catch(function (err) {
+      console.warn('No se pudo activar el modo sin conexión:', err);
+    });
+  });
+}
 </script>
 
 </body>
