@@ -1,0 +1,13 @@
+{
+  "id": "./",
+  "name": "Mi Agenda",
+  "short_name": "Mi Agenda",
+  "description": "Agenda personal para consultar citas y notas sin conexión.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": []
+}
