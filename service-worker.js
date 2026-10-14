@@ -1,27 +1,29 @@
 'use strict';
 
-const CACHE_NAME = 'mi-agenda-8-24-offline-v1';
+const CACHE_NAME = 'mi-gimnasio-pro-v10-8-offline-v2';
+const CACHE_PREFIX = 'mi-gimnasio-pro-';
 const APP_SHELL = [
   './',
   './index.html',
-  './manifest.webmanifest'
+  './manifest.webmanifest',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_SHELL).catch(() => cache.add('./')))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache =>
+      cache.addAll(APP_SHELL).catch(() => cache.add('./'))
+    ).then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(
+      keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+    )).then(() => self.clients.claim())
   );
 });
 
@@ -45,12 +47,10 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Guarda recursos del mismo sitio y medios externos (por ejemplo, imágenes)
-  // cuando se consultan con conexión, para poder reutilizarlos sin conexión.
-  const externalMedia = url.origin !== self.location.origin &&
-    /\.(gif|png|jpe?g|webp|svg|woff2?)(\?.*)?$/i.test(url.href);
+  const isExternalMedia = url.origin !== self.location.origin &&
+    /\.(gif|png|jpe?g|webp|svg)(\?.*)?$/i.test(url.href);
 
-  if (url.origin === self.location.origin || externalMedia) {
+  if (url.origin === self.location.origin || isExternalMedia) {
     event.respondWith(
       caches.match(request).then(cached => {
         if (cached) return cached;
