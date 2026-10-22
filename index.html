@@ -264,6 +264,7 @@ input:focus,select:focus,textarea:focus{
   text-transform:capitalize;
 }
 .report3day:last-child{margin-bottom:0}
+.agenda-attachments a{overflow-wrap:anywhere}.modalbox input[type=file]{max-width:100%;box-sizing:border-box}
 </style>
 
 <style>
@@ -294,6 +295,58 @@ input:focus,select:focus,textarea:focus{
 <style>
 </style>
 
+<style>
+
+/* v8.24 — retoques visuales suaves (solo CSS; no altera funciones ni datos) */
+:root{
+  --ui-radius:12px;
+}
+body{line-height:1.42;-webkit-tap-highlight-color:transparent}
+main{max-width:920px;margin-left:auto;margin-right:auto;padding-left:12px;padding-right:12px}
+header{padding:12px 14px}
+header h1{font-size:clamp(1.15rem,4vw,1.55rem);line-height:1.2}
+.card{border-radius:var(--ui-radius);padding:13px;margin-bottom:12px}
+.card h2,.card h3{line-height:1.25;margin-top:0}
+button,.btn,.sm{border-radius:9px;min-height:36px}
+.btn{padding:9px 12px;font-weight:650}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{
+  border-radius:8px;padding:9px 10px;max-width:100%;box-sizing:border-box
+}
+textarea{line-height:1.45;min-height:76px}
+label{line-height:1.35}
+.event{padding:11px 12px;border-radius:10px;margin-bottom:9px}
+.event .etext{line-height:1.4;overflow-wrap:anywhere}
+.event .edate{line-height:1.4}
+.actions{flex-wrap:wrap;gap:7px}
+.actions button{border-radius:8px;min-height:38px}
+.filterbar{padding-bottom:2px;scrollbar-width:thin}
+.filterbar button{border-radius:9px;min-height:36px}
+.empty,.todayEmpty{border-radius:10px}
+.notice{border-radius:10px}
+.modalbox{border-radius:14px;padding:16px;box-shadow:0 14px 40px #0008}
+.archivoLista{gap:9px}
+.archivoItem{border:1px solid #30363d;border-radius:10px;padding:11px 12px}
+.archivoItem .titulo{line-height:1.35;overflow-wrap:anywhere}
+.archivoItem .detalle{line-height:1.4}
+.agenda-attachments{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.agenda-attachments a,.agenda-attachments button{display:inline-flex;align-items:center;gap:5px;max-width:100%;border-radius:8px;padding:7px 10px;background:#192a31;border:1px solid #34515d;color:#b9e4ff;text-decoration:none;overflow-wrap:anywhere}
+.agenda-attachments a:active,.agenda-attachments button:active,.btn:active,button:active{transform:scale(.985)}
+#calendar{border:1px solid #252b30}
+.cal{border-radius:8px;transition:background .12s,border-color .12s}
+.calendarLegend{row-gap:7px}
+.todaybox,.nextbox{padding-top:2px;padding-bottom:2px}
+:focus-visible{outline:2px solid var(--a)!important;outline-offset:2px}
+@media(max-width:520px){
+  main{padding-left:9px;padding-right:9px}
+  .card{padding:11px;margin-bottom:10px}
+  .formrow{gap:7px}
+  .formrow>div{min-width:0}
+  .actions button{flex:1 1 auto}
+  .archivoItem{grid-template-columns:minmax(0,1fr) auto;gap:7px;padding:10px}
+  .agenda-attachments a,.agenda-attachments button{font-size:.78rem}
+}
+
+</style>
 </head>
 
 <body>
@@ -400,44 +453,6 @@ input:focus,select:focus,textarea:focus{
 </div>
 
 
-
-<div class="card">
-
-<h2>⚙️ Ajustes</h2>
-
-<button class="btn out" id="export">
-💾 Exportar agenda
-</button>
-
-<br><br>
-
-<button class="btn out" id="importBtn">
-📥 Importar agenda
-</button>
-<br><br>
-
-
-
-<button class="btn out" id="importArchivoBtn">
-📁 Importar copia de ARCHIVO
-</button>
-<input id="archivoBackupFile" type="file" accept=".json,application/json" style="display:none">
-<div id="estadoImportArchivo" class="sub" style="margin-top:8px"></div>
-
-<input id="file" type="file" accept=".json" style="display:none">
-
-</div>
-
-
-<div class="card">
-
-<h2>ℹ️ Mi Agenda</h2>
-
-<p style="color:var(--sub);font-size:.78rem;line-height:1.5">
-Agenda personal sencilla. Los datos se guardan automáticamente en este dispositivo.
-</p>
-
-</div>
 
 </section>
 
@@ -650,6 +665,11 @@ function card(e){
     (e.note?
       '<div style="font-size:.72rem;color:var(--sub)">'+
       esc(e.note)+
+      '</div>':
+      '')+
+    (Array.isArray(e.attachments)&&e.attachments.length?
+      '<div class="agenda-attachments" style="margin-top:7px;font-size:.82rem">📎 <strong>Adjuntos:</strong> '+
+      e.attachments.map(function(a,i){return '<a href="#" class="openAttachment" data-event-id="'+esc(e.id)+'" data-attachment-index="'+i+'" style="display:inline-block;margin:2px 7px 2px 0;color:var(--accent,#00d982)">'+(a.kind==="image"?"🖼️ ":"📄 ")+esc(a.name)+"</a>";}).join('')+
       '</div>':
       '')+
     '<div class="actions">'+
@@ -1139,6 +1159,10 @@ function openForm(date,e){
  'placeholder="Detalles...">'+
  esc(e&&e.note||"")+
  '</textarea>'+
+ '<label>Fotografías y documentos (opcional)</label>'+ 
+ '<input id="fattachments" type="file" multiple accept="image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx" style="width:100%;margin:5px 0">'+
+ '<div style="font-size:.75rem;color:var(--sub);margin:3px 0 7px">Las imágenes se reducen automáticamente. Máximo 2 MB por documento y 3 MB de adjuntos por anotación.</div>'+ 
+ '<div id="existingAttachments" style="font-size:.82rem;margin-bottom:8px"></div>'+
 
  '<div id="taskOptions" style="display:none">'+
  '<label>Prioridad</label>'+
@@ -1182,6 +1206,13 @@ $("ft").value=e&&e.type||"cita";
 
  $("fdone").checked=!!(e&&e.done);
 
+ const adjuntosPrevios=Array.isArray(e&&e.attachments)?e.attachments:[];
+ const adjBox=$("existingAttachments");
+ if(adjBox && adjuntosPrevios.length){
+   adjBox.innerHTML='<strong>Adjuntos guardados:</strong><br>'+adjuntosPrevios.map(function(a,i){
+     return '<label style="display:flex;gap:6px;align-items:center;margin:4px 0;font-weight:normal"><input type="checkbox" class="keepAttachment" data-index="'+i+'" checked><span>'+(a.kind==="image"?"🖼️":"📄")+' '+esc(a.name)+'</span></label>';
+   }).join('')+'<small>Desmarca los archivos que quieras quitar al guardar.</small>';
+ } else if(adjBox) adjBox.textContent='Todavía no hay archivos adjuntos.';
 
  function rep(){
 
@@ -1225,7 +1256,7 @@ $("ft").value=e&&e.type||"cita";
  $("fc").onclick=()=>m.remove();
 
 
- $("fs").onclick=()=>{
+ $("fs").onclick=async ()=>{
 
   let text=$("fx").value.trim();
 
@@ -1249,50 +1280,31 @@ $("ft").value=e&&e.type||"cita";
    return;
   }
 
-  let x={
+  const keepChecks=Array.from(document.querySelectorAll(".keepAttachment"));
+  let attachments=adjuntosPrevios.filter((a,i)=>{
+    const chk=keepChecks.find(c=>Number(c.dataset.index)===i);
+    return !chk || chk.checked;
+  });
+  const files=Array.from(($("fattachments")&&$("fattachments").files)||[]);
+  const MAX_DOC=2*1024*1024, MAX_TOTAL=3*1024*1024;
+  function readDataURL(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||""));r.onerror=()=>reject(new Error("No se pudo leer "+file.name));r.readAsDataURL(file);});}
+  function compressImage(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onerror=()=>reject(new Error("No se pudo leer la imagen "+file.name));r.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error("No se pudo procesar la imagen "+file.name));img.onload=()=>{const scale=Math.min(1,1280/Math.max(img.width,img.height));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);const data=canvas.toDataURL("image/jpeg",0.72);resolve({name:file.name.replace(/\.[^.]+$/,"" )+".jpg",data:data,kind:"image",size:Math.ceil(data.length*0.75)});};img.src=r.result;};r.readAsDataURL(file);});}
+  try{
+    for(const file of files){
+      let item;
+      if(file.type&&file.type.startsWith("image/")) item=await compressImage(file);
+      else {if(file.size>MAX_DOC)throw new Error('El documento "'+file.name+'" supera los 2 MB permitidos.');item={name:file.name,data:await readDataURL(file),kind:"document",size:file.size};}
+      attachments.push(item);
+    }
+    const total=attachments.reduce((sum,a)=>sum+(a.size||Math.ceil((a.data||"").length*0.75)),0);
+    if(total>MAX_TOTAL)throw new Error("Los adjuntos de esta anotación superan los 3 MB. Quita algún archivo o usa archivos más pequeños.");
+  }catch(err){alert("No se han guardado los cambios.\n\n"+(err.message||"No se pudieron procesar los adjuntos."));return;}
 
-   id:editId||Date.now(),
-
-   type:$("ft").value,
-
-   date:fecha,
-
-   time:$("fh").value,
-
-   text:text,
-
-   note:$("fn").value.trim(),
-
-   repeat:
-    $("ft").value==="cumple"&&
-    $("fr").checked,
-
-   done:
-    $("ft").value==="tarea"&&
-    $("fdone").checked,
-
-   priority:
-    $("ft").value==="tarea"?
-    $("fp").value:
-    "normal"
-  };
-
-
-  if(editId){
-
-   events=events.map(a=>
-    String(a.id)===String(editId)?
-    x:
-    a
-   );
-
-  }else{
-
-   events.push(x);
-  }
-
-
-  save();
+  let x={id:editId||Date.now(),type:$("ft").value,date:fecha,time:$("fh").value,text:text,note:$("fn").value.trim(),attachments:attachments,repeat:$("ft").value==="cumple"&&$("fr").checked,done:$("ft").value==="tarea"&&$("fdone").checked,priority:$("ft").value==="tarea"?$("fp").value:"normal"};
+  try{
+    if(editId){events=events.map(a=>String(a.id)===String(editId)?x:a);save();}
+    else {events.push(x);try{save();}catch(storageErr){events.pop();throw storageErr;}}
+  }catch(storageErr){alert("No se ha podido guardar la anotación. El almacenamiento del navegador puede estar lleno. No se han guardado los cambios. Prueba con menos adjuntos.");return;}
 
   selected=x.date;
 
@@ -2324,6 +2336,68 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+</script>
+
+
+<script>
+/* Visor integrado: evita navegar directamente a una URL data:, que algunos navegadores dejan en blanco. */
+(function(){
+  document.addEventListener("click", function(ev){
+    const link=ev.target.closest(".openAttachment");
+    if(!link) return;
+    ev.preventDefault();
+    const eventId=link.getAttribute("data-event-id");
+    const index=Number(link.getAttribute("data-attachment-index"));
+    let item=null;
+    try{
+      const pool=typeof allEvents==="function"?allEvents():(typeof events!=="undefined"?events:[]);
+      const record=pool.find(function(e){return String(e.id)===String(eventId);});
+      if(record&&Array.isArray(record.attachments)) item=record.attachments[index];
+    }catch(err){}
+    if(!item||!item.data){
+      alert("No se ha podido abrir el archivo adjunto. Prueba a editar la anotación y guardarla de nuevo.");
+      return;
+    }
+    let old=document.getElementById("attachmentViewer");
+    if(old) old.remove();
+    const overlay=document.createElement("div");
+    overlay.id="attachmentViewer";
+    overlay.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;padding:12px;box-sizing:border-box";
+    const bar=document.createElement("div");
+    bar.style.cssText="display:flex;align-items:center;gap:10px;color:white;padding:4px 0 12px;flex-shrink:0";
+    const title=document.createElement("div");
+    title.textContent=item.name||"Archivo adjunto";
+    title.style.cssText="flex:1;overflow-wrap:anywhere;font-weight:600";
+    const close=document.createElement("button");
+    close.type="button";close.textContent="✕ Cerrar";
+    close.style.cssText="border:0;border-radius:8px;padding:10px 12px;background:#00d982;color:#06130c;font-weight:700";
+    close.onclick=function(){overlay.remove();};
+    bar.append(title,close);
+    overlay.appendChild(bar);
+    if(item.kind==="image"){
+      const img=document.createElement("img");
+      img.src=item.data;img.alt=item.name||"Fotografía";
+      img.style.cssText="display:block;max-width:100%;max-height:calc(100vh - 90px);object-fit:contain;margin:auto";
+      overlay.appendChild(img);
+    }else if(/\.pdf$/i.test(item.name||"") || String(item.data).startsWith("data:application/pdf")){
+      const frame=document.createElement("iframe");
+      frame.src=item.data;frame.title=item.name||"Documento PDF";
+      frame.style.cssText="width:100%;height:calc(100vh - 80px);border:0;background:white;flex:1";
+      overlay.appendChild(frame);
+    }else{
+      const msg=document.createElement("div");
+      msg.textContent="Este formato puede no mostrarse dentro de la agenda. Puedes abrirlo o guardarlo con el botón siguiente.";
+      msg.style.cssText="color:white;margin:18px 0";
+      const download=document.createElement("a");
+      download.href=item.data;download.download=item.name||"documento";
+      download.textContent="⬇ Descargar / abrir documento";
+      download.style.cssText="align-self:center;background:#00d982;color:#06130c;padding:12px 16px;border-radius:8px;font-weight:700;text-decoration:none";
+      overlay.append(msg,download);
+    }
+    overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
+    document.body.appendChild(overlay);
+  });
+})();
 </script>
 
 </body>
