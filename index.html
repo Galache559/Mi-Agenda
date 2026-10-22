@@ -2396,7 +2396,7 @@ function borrarUltimaAccionAgenda(){
       '<button class="btn" id="voiceSave" type="button">💾 Guardar nota</button>'+
       '<button class="btn out" id="voiceCancel" type="button">Cancelar</button>'+
       '</div>'+
-      '<div style="margin-top:10px;font-size:.85rem;opacity:.75">💡 Di <strong>“guarda nota”</strong>, <strong>“repetir”</strong> o <strong>“borrar la última”</strong>.</div>'+
+      '<div style="margin-top:10px;font-size:.85rem;opacity:.75">💡 Di la frase completa con fecha, hora, tipo y descripción. Termina con <strong>“guarda”</strong>. Ejemplo: “30 de noviembre de 2026, 14:00, cita médica, traumatólogo, doctor López de Jaén, guarda”. También puedes decir “repetir” o “borrar la última”.</div>'+
       '</div>';
     document.body.appendChild(m);
 
@@ -2427,15 +2427,13 @@ function borrarUltimaAccionAgenda(){
     }
 
     function quitarOrdenGuardar(s){
-      /* Solo usamos órdenes inequívocas para no guardar accidentalmente una frase normal. */
-      let limpio=String(s||"");
-      const re=/\s*(?:guarda|guardar)\s+nota\s*[.!?,;:]?\s*$/i;
-      return limpio.replace(re,"").trim();
+      /* Admite “guarda” o “guardar”, con o sin la palabra “nota”, al final. */
+      return String(s||"").replace(/\s*(?:guarda|guardar)(?:\s+nota)?\s*[.!?,;:]?\s*$/i,"").trim();
     }
 
     function contieneOrdenGuardar(s){
       const n=normalizarOrden(s);
-      return /(?:^|\s)(?:guarda|guardar)\s+nota(?:\s|$)/i.test(n);
+      return /(?:^|\s)(?:guarda|guardar)(?:\s+nota)?\s*$/.test(n);
     }
 
     function contieneOrdenRepetir(s){
@@ -2449,11 +2447,46 @@ function borrarUltimaAccionAgenda(){
     }
 
     function horaVoz(texto){
+      const original=String(texto||"").toLowerCase();
       const raw=normalizarOrden(texto);
-      const m=raw.match(/\ba\s+las\s+(\d{1,2})(?:\s+y\s+(\d{1,2}))?\b/);
+      /* Buscar primero en el texto original, antes de normalizar los dos puntos de 14:00. */
+      let m=original.match(/\b(\d{1,2})\s*[:.]\s*(\d{2})\b/);
+      if(!m)m=raw.match(/\ba\s+las\s+(\d{1,2})(?:\s+y\s+(\d{1,2}))?\b/);
+      if(!m)m=raw.match(/\b(\d{1,2})\s+horas\b/);
       if(!m)return null;
       const h=Number(m[1]),min=m[2]?Number(m[2]):0;
       return h<=23&&min<=59?String(h).padStart(2,"0")+":"+String(min).padStart(2,"0"):null;
+    }
+
+    function interpretarFraseVoz(frase){
+      let texto=quitarOrdenGuardar(String(frase||"").trim());
+      const normal=normalizarOrden(texto);
+      let tipo="tarea";
+      if(/\bmedico\b|\bcita\s+medica\b/.test(normal))tipo="medico";
+      else if(/\bcumple(?:anos)?\b/.test(normal))tipo="cumple";
+      else if(/\bcita\b/.test(normal))tipo="cita";
+      else if(/\bviaje\b/.test(normal))tipo="viaje";
+      else if(/\bnota\b/.test(normal))tipo="tarea";
+
+      const fecha=fechaVoz(texto);
+      const hora=horaVoz(texto);
+
+      /* Retira únicamente los datos de programación; conserva el texto descriptivo. */
+      let descripcion=texto;
+      descripcion=descripcion.replace(/\b(?:el\s+)?(?:dia\s+)?\d{1,2}\s+de\s+[a-záéíóúñ]+(?:\s+de\s+\d{4})?\b/ig," ");
+      descripcion=descripcion.replace(/\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/g," ");
+      descripcion=descripcion.replace(/\b\d{1,2}\s*[:.]\s*\d{2}\b/g," ");
+      descripcion=descripcion.replace(/\ba\s+las\s+\d{1,2}(?:\s+y\s+\d{1,2})?\b/ig," ");
+      descripcion=descripcion.replace(/\b\d{1,2}\s+horas\b/ig," ");
+      descripcion=descripcion.replace(/\bcita\s+m[eé]dica\b/ig," ");
+      descripcion=descripcion.replace(/\bm[eé]dico\b/ig," ");
+      descripcion=descripcion.replace(/\bcumplea[nñ]os?\b/ig," ");
+      descripcion=descripcion.replace(/\bnota\b/ig," ");
+      descripcion=descripcion.replace(/\bcita\b/ig," ");
+      descripcion=descripcion.replace(/\bviaje\b/ig," ");
+      descripcion=descripcion.replace(/[\s,;:.-]+/g," ").trim();
+
+      return {type:tipo,date:fecha,time:hora,text:descripcion||texto};
     }
 
     function limpiarProgramacionVoz(s){
@@ -2612,8 +2645,9 @@ function borrarUltimaAccionAgenda(){
       parar();
 
       const textoOriginal=quitarOrdenGuardar(txt.value.trim());
-      let text=limpiarProgramacionVoz(textoOriginal);
-      if(!text)text=textoOriginal;
+      const interpretado=interpretarFraseVoz(textoOriginal);
+      let text=interpretado.text;
+      if(!text)text=limpiarProgramacionVoz(textoOriginal);
       if(!text){
         guardando=false;
         saveBtn.disabled=false;
@@ -2636,9 +2670,10 @@ function borrarUltimaAccionAgenda(){
 
       /* Evita duplicados recientes de la misma nota por voz */
       const duplicada=events.some(e=>
-        e && e.type==="tarea" &&
+        e &&
         (e.voice===true || e.note==="Anotación grabada por voz") &&
         String(e.text||"").trim()===text &&
+        String(e.date||"")===String(interpretado.date||fechaVoz(textoOriginal)) &&
         now-Number(e.voiceSavedAt||0)<10000
       );
       if(duplicada){
@@ -2650,12 +2685,12 @@ function borrarUltimaAccionAgenda(){
 
       const x={
         id:"voz_"+now+"_"+Math.random().toString(36).slice(2,8),
-        type:"tarea",
-        date:fechaNota,
-        time:horaVoz(textoOriginal)||horaActual(),
+        type:interpretado.type||"tarea",
+        date:interpretado.date||fechaNota,
+        time:interpretado.time||horaActual(),
         text:text,
         note:"Anotación grabada por voz",
-        repeat:false,
+        repeat:interpretado.type==="cumple",
         done:false,
         priority:"high",
         voice:true,
@@ -2692,20 +2727,21 @@ function borrarUltimaAccionAgenda(){
       };
 
       recognition.onresult=function(e){
-        let interim="";
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          const frase=e.results[i][0].transcript;
-          if(e.results[i].isFinal){
-            finalText+=(finalText?" ":"")+frase.trim();
-          }else{
-            interim+=(interim?" ":"")+frase.trim();
-          }
+        /* Reconstruir desde la lista completa evita acumular varias veces resultados parciales. */
+        let partes=[];
+        let ultimoEsFinal=false;
+        for(let i=0;i<e.results.length;i++){
+          const resultado=e.results[i];
+          const frase=(resultado[0]&&resultado[0].transcript||"").trim();
+          if(frase)partes.push(frase);
+          if(i===e.results.length-1)ultimoEsFinal=!!resultado.isFinal;
         }
-
-        const mostrado=(finalText+(interim?" "+interim:"")).trim();
+        const mostrado=partes.join(" ").replace(/\\s+/g," ").trim();
         txt.value=mostrado;
 
-        /* “borrar la última” pide confirmación antes de eliminar. */
+        /* Las órdenes solo se ejecutan cuando el reconocimiento ha confirmado el último fragmento. */
+        if(!ultimoEsFinal)return;
+
         if(contieneOrdenBorrar(mostrado)){
           parar();
           cerrar();
@@ -2713,8 +2749,6 @@ function borrarUltimaAccionAgenda(){
           return;
         }
 
-        /* “repetir” reutiliza la última tarea del día seleccionado.
-           Si se acompaña de una fecha, esa será la nueva fecha; si no, mañana. */
         if(contieneOrdenRepetir(mostrado)){
           parar();
           const ordenRepetir=normalizarOrden(mostrado);
@@ -2723,9 +2757,7 @@ function borrarUltimaAccionAgenda(){
           return;
         }
 
-        /* En cuanto la orden llega como resultado final, guardamos automáticamente. */
         if(contieneOrdenGuardar(mostrado)){
-          txt.value=quitarOrdenGuardar(mostrado);
           guardarNota();
         }
       };
@@ -2744,7 +2776,7 @@ function borrarUltimaAccionAgenda(){
         start.disabled=false;
         stop.disabled=true;
         status.classList.remove("active");
-        if(txt.value.trim())status.textContent="✅ Texto capturado. Di “guarda nota” para guardarlo.";
+        if(txt.value.trim())status.textContent="✅ Texto capturado. Termina la frase con “guarda” para guardarla.";
       };
 
       try{recognition.start()}
