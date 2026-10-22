@@ -391,12 +391,12 @@ input:focus,select:focus,textarea:focus{
 <section id="ajustes" class="tab">
 <div id="copiaSeguridadAgenda" class="card">
   <h3>💾 COPIA DE SEGURIDAD</h3>
-  <p class="sub">Guarda una copia completa de tu agenda y de los datos de ARCHIVO.<br><small>También puedes cargar copias JSON de versiones anteriores de Mi Agenda.</small></p>
+  <p class="sub">Guarda tus datos de AGENDA, ARCHIVO, carpetas personalizadas, cumpleaños anuales y preferencia de avisos en un único archivo JSON.<br><small>Esta copia contiene tus datos, no el código HTML de la aplicación. También admite copias JSON de versiones anteriores.</small></p>
   <div style="display:grid;gap:7px">
     <button class="btn" onclick="exportarCopiaAgenda()">⬇️ Descargar copia completa</button>
     <button class="btn out" onclick="importarCopiaAgenda()">⬆️ Restaurar una copia</button>
   </div>
-  <div id="estadoCopiaAgenda" class="sub" style="margin-top:9px"></div>
+  <div id="estadoCopiaAgenda" class="sub" style="margin-top:9px" role="status" aria-live="polite"></div>
 </div>
 
 
@@ -1985,136 +1985,127 @@ document.addEventListener("DOMContentLoaded",function(){
 
 <script>
 (function(){
-  const BACKUP_VERSION="Mi Agenda Backup v1";
+  "use strict";
+  const BACKUP_VERSION="Mi Agenda Backup v2";
+  const KEYS={
+    agenda:"mi_agenda_v5",
+    archivo:"mi_agenda_archivo_v1",
+    estructura:"mi_agenda_archivo_estructura_v1",
+    cumpleanos:"mi_agenda_cumples_v1",
+    avisos:"mi_agenda_avisos_automaticos"
+  };
 
   function readKey(key,fallback){
     try{
-      const v=JSON.parse(localStorage.getItem(key)||"null");
-      return v===null?fallback:v;
+      const raw=localStorage.getItem(key);
+      return raw===null?fallback:JSON.parse(raw);
     }catch(e){return fallback}
   }
-
   function estadoCopia(t){
     const e=document.getElementById("estadoCopiaAgenda");
     if(e)e.textContent=t;
   }
-
-  window.exportarCopiaAgenda=function(){
-    const backup={
-      formato:BACKUP_VERSION,
-      fecha:new Date().toISOString(),
-      agenda:readKey("mi_agenda_v5",[]),
-      archivo:readKey("mi_agenda_archivo_v1",[]),
-      cumpleanosAnuales:readKey("mi_agenda_cumples_v1",[])
-    };
-    const blob=new Blob(
-      [JSON.stringify(backup,null,2)],
-      {type:"application/json;charset=utf-8"}
-    );
+  function validarArray(valor,nombre){
+    if(!Array.isArray(valor))throw new Error("La sección "+nombre+" no es válida.");
+    return valor;
+  }
+  function descargarJSON(obj,nombre){
+    const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json;charset=utf-8"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;
-    a.download="Mi_Agenda_Copia_"+new Date().toISOString().slice(0,10)+".json";
+    a.download=nombre;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
-    estadoCopia("✓ Copia completa descargada correctamente.");
+    setTimeout(function(){URL.revokeObjectURL(url)},1500);
+  }
+
+  window.exportarCopiaAgenda=function(){
+    try{
+      const agenda=validarArray(readKey(KEYS.agenda,[]),"Agenda");
+      const archivo=validarArray(readKey(KEYS.archivo,[]),"Archivo");
+      const cumpleanos=validarArray(readKey(KEYS.cumpleanos,[]),"Cumpleaños");
+      const estructura=readKey(KEYS.estructura,{carpetas:[]});
+      if(!estructura || typeof estructura!=="object" || !Array.isArray(estructura.carpetas))
+        throw new Error("La estructura de carpetas no tiene un formato válido.");
+      const avisos=localStorage.getItem(KEYS.avisos);
+      const backup={
+        formato:BACKUP_VERSION,
+        aplicacion:"Mi Agenda",
+        fecha:new Date().toISOString(),
+        contenido:"datos", 
+        agenda:agenda,
+        archivo:archivo,
+        estructuraArchivo:estructura,
+        cumpleanosAnuales:cumpleanos,
+        avisosAutomaticos:avisos===null?"1":avisos,
+        resumen:{agenda:agenda.length,archivo:archivo.length,carpetasPersonalizadas:estructura.carpetas.length,cumpleanosAnuales:cumpleanos.length}
+      };
+      const fecha=new Date().toISOString().slice(0,10);
+      descargarJSON(backup,"Mi_Agenda_Copia_Completa_"+fecha+".json");
+      estadoCopia("✓ Copia completa descargada. Incluye "+agenda.length+" registros de agenda, "+archivo.length+" datos de archivo, "+estructura.carpetas.length+" carpetas personalizadas y "+cumpleanos.length+" cumpleaños.");
+    }catch(e){
+      estadoCopia("No se pudo crear la copia: "+(e&&e.message?e.message:"error inesperado"));
+      alert("No se pudo crear la copia de seguridad. No se han modificado tus datos.\n\n"+(e&&e.message?e.message:"Error inesperado."));
+    }
   };
 
   window.importarCopiaAgenda=function(){
     const input=document.createElement("input");
     input.type="file";
     input.accept=".json,application/json";
-
     input.onchange=function(){
       const file=input.files&&input.files[0];
       if(!file)return;
-
       const reader=new FileReader();
-
+      reader.onerror=function(){alert("No se ha podido leer el archivo seleccionado.");};
       reader.onload=function(){
         try{
           const data=JSON.parse(reader.result);
-          let agenda=null,archivo=null,cumples=null;
-          let tipo="";
-
-          /* NUEVA COPIA COMPLETA */
+          let agenda=null,archivo=null,cumples=null,estructura=null,avisos=null;
+          const secciones=[];
           if(data && typeof data==="object" && !Array.isArray(data)){
-            if(Array.isArray(data.agenda)){
-              agenda=data.agenda;
-              tipo="copia completa";
+            if(Array.isArray(data.agenda)){agenda=data.agenda;secciones.push("Agenda: "+agenda.length);}
+            if(Array.isArray(data.archivo)){archivo=data.archivo;secciones.push("Archivo: "+archivo.length);}
+            if(Array.isArray(data.cumpleanosAnuales)){cumples=data.cumpleanosAnuales;secciones.push("Cumpleaños: "+cumples.length);}
+            if(data.estructuraArchivo && typeof data.estructuraArchivo==="object" && Array.isArray(data.estructuraArchivo.carpetas)){
+              estructura=data.estructuraArchivo;secciones.push("Carpetas personalizadas: "+estructura.carpetas.length);
             }
-            if(Array.isArray(data.archivo)) archivo=data.archivo;
-            if(Array.isArray(data.cumpleanosAnuales))
-              cumples=data.cumpleanosAnuales;
+            if(data.avisosAutomaticos==="0"||data.avisosAutomaticos==="1")avisos=data.avisosAutomaticos;
           }
-
-          /* COPIA ORIGINAL DE AGENDA O ARCHIVO */
           if(Array.isArray(data)){
-            const esAgenda=data.some(x=>x && (
-              x.date!==undefined ||
-              x.fecha!==undefined ||
-              x.type!==undefined ||
-              x.tipo!==undefined ||
-              x.text!==undefined ||
-              x.titulo!==undefined && x.date!==undefined
-            ));
-
-            const esArchivo=data.some(x=>x && (
-              x.categoria!==undefined ||
-              x.category!==undefined ||
-              x.grupo!==undefined ||
-              x.concepto!==undefined
-            ));
-
-            if(esAgenda && !esArchivo){
-              agenda=data;
-              tipo="copia antigua de AGENDA";
-            }else if(esArchivo){
-              archivo=data;
-              tipo="copia antigua de ARCHIVO";
-            }
+            const esAgenda=data.some(x=>x && (x.date!==undefined||x.fecha!==undefined||x.type!==undefined||x.tipo!==undefined||x.text!==undefined));
+            const esArchivo=data.some(x=>x && (x.categoria!==undefined||x.category!==undefined||x.grupo!==undefined||x.concepto!==undefined));
+            if(esAgenda&&!esArchivo){agenda=data;secciones.push("Agenda antigua: "+agenda.length);}
+            else if(esArchivo){archivo=data;secciones.push("Archivo antiguo: "+archivo.length);}
           }
+          if(agenda===null&&archivo===null&&cumples===null&&estructura===null&&avisos===null)
+            throw new Error("No se han encontrado datos compatibles de Mi Agenda.");
 
-          if(!agenda && !archivo && !cumples){
-            throw new Error("Formato no reconocido");
-          }
-
-          let msg="Se ha detectado: "+tipo+".";
-          if(agenda)msg+="\n\n📅 Agenda: "+agenda.length+" registros.";
-          if(archivo)msg+="\n📁 Archivo: "+archivo.length+" registros.";
-          if(cumples)msg+="\n🎂 Cumpleaños: "+cumples.length+" registros.";
-
-          msg+="\n\nSolo se reemplazarán los datos que contiene esta copia.";
-          msg+="\nLos demás datos actuales permanecerán intactos.";
-          msg+="\n\n¿Continuar?";
-
+          let msg="Se han encontrado estas secciones:\n\n• "+secciones.join("\n• ");
+          msg+="\n\nSolo se reemplazarán las secciones incluidas en esta copia.";
+          msg+="\nLas secciones que no estén en el archivo permanecerán como están.";
+          msg+="\n\n¿Quieres continuar con la restauración?";
           if(!confirm(msg))return;
 
-          if(agenda)
-            localStorage.setItem("mi_agenda_v5",JSON.stringify(agenda));
-
-          if(archivo)
-            localStorage.setItem("mi_agenda_archivo_v1",JSON.stringify(archivo));
-
-          if(cumples)
-            localStorage.setItem("mi_agenda_cumples_v1",JSON.stringify(cumples));
-
-          estadoCopia("✓ Copia compatible restaurada. Recargando…");
-          setTimeout(function(){location.reload()},600);
-
+          /* Validar todo antes de escribir nada. */
+          if(agenda!==null)validarArray(agenda,"Agenda");
+          if(archivo!==null)validarArray(archivo,"Archivo");
+          if(cumples!==null)validarArray(cumples,"Cumpleaños");
+          if(agenda!==null)localStorage.setItem(KEYS.agenda,JSON.stringify(agenda));
+          if(archivo!==null)localStorage.setItem(KEYS.archivo,JSON.stringify(archivo));
+          if(cumples!==null)localStorage.setItem(KEYS.cumpleanos,JSON.stringify(cumples));
+          if(estructura!==null)localStorage.setItem(KEYS.estructura,JSON.stringify(estructura));
+          if(avisos!==null)localStorage.setItem(KEYS.avisos,avisos);
+          estadoCopia("✓ Restauración completada. Recargando la agenda…");
+          setTimeout(function(){location.reload()},700);
         }catch(e){
-          alert(
-            "No se ha podido restaurar el archivo.\n\n"+
-            "El JSON no parece una copia válida de Mi Agenda."
-          );
+          alert("No se ha podido restaurar el archivo.\n\nNo se ha aplicado ninguna restauración si el archivo no era compatible.\n\nComprueba que seleccionaste una copia JSON válida de Mi Agenda.");
         }
       };
-
       reader.readAsText(file);
     };
-
     input.click();
   };
 })();
