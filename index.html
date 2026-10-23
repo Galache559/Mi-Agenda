@@ -22,7 +22,7 @@ h1{font-size:1.2rem;color:var(--a)}
 h2{font-size:1rem;color:var(--a);margin-bottom:10px}
 .container{max-width:650px;margin:auto;padding:10px}
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);display:flex;border-top:1px solid var(--bor);padding:7px 0;z-index:20}
-nav button{width:33%;background:none;border:0;color:var(--sub);font-size:.75rem;padding:4px}
+nav button{width:25%;background:none;border:0;color:var(--sub);font-size:.75rem;padding:4px}
 nav button.active{color:var(--a);font-weight:bold}
 .tab{display:none}.tab.active{display:block}
 .card{background:var(--card);border:1px solid var(--bor);border-radius:11px;padding:12px;margin-bottom:10px}
@@ -70,6 +70,14 @@ label{font-size:.75rem;color:var(--sub)}
 .etext{font-size:.9rem;margin:3px 0}
 .citatime{display:inline-block;color:var(--blue);font-size:1rem;font-weight:bold;margin-right:7px}
 .citalabel{font-size:.68rem;color:var(--sub);text-transform:uppercase}
+.monthSummary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:8px 0 12px}
+.monthSummaryItem{min-width:0;background:#20262a;border:1px solid var(--bor);border-radius:9px;padding:8px 4px;text-align:center}
+.monthSummaryItem .monthSummaryIcon{font-size:.9rem;display:block;margin-bottom:3px}
+.monthSummaryItem strong{display:block;color:#fff;font-size:1.05rem;line-height:1.15}
+.monthSummaryItem span:last-child{display:block;color:var(--sub);font-size:.62rem;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.monthSummaryTotal{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#17242b;border:1px solid #31505a;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:.78rem}
+.monthSummaryTotal strong{color:var(--a);font-size:.95rem}
+@media(max-width:420px){.monthSummary{grid-template-columns:repeat(3,minmax(0,1fr))}.monthSummaryItem{padding:7px 3px}}
 .filterbar{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}
 .filterbar button{flex:1;white-space:nowrap;background:#252525;color:#aaa;border:1px solid var(--bor);border-radius:7px;padding:8px 7px;font-size:.7rem}
 .filterbar button.active{background:var(--blue);color:#000;font-weight:bold}
@@ -264,7 +272,56 @@ input:focus,select:focus,textarea:focus{
   text-transform:capitalize;
 }
 .report3day:last-child{margin-bottom:0}
+.report3dayTitle{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.report3dayHeading{display:flex;align-items:center;gap:7px;min-width:0}
+.report3dayToday{display:inline-flex;align-items:center;background:#00df83;color:#062a1a;border:1px solid #7dffbd;border-radius:999px;padding:2px 7px;font-size:.62rem;font-weight:900;letter-spacing:.03em}
+.report3dayCount{flex-shrink:0;color:var(--sub);font-size:.68rem;font-weight:600}
+.report3dayEmpty{padding:9px 10px;border-radius:8px;background:#171b1e;border:1px dashed #343c42;color:var(--sub);font-size:.78rem}
+.report3day .event{margin:0 0 6px}
 .agenda-attachments a{overflow-wrap:anywhere}.modalbox input[type=file]{max-width:100%;box-sizing:border-box}
+
+/* Entrada rápida: destacar los selectores nativos de fecha y hora */
+#entradaRapida #erFecha,
+#entradaRapida #erHora{
+  background:#12343b;
+  border:2px solid #26c6da;
+  color:#ffffff;
+  color-scheme:dark;
+  box-shadow:inset 0 0 0 1px #26c6da22;
+}
+#entradaRapida #erFecha:focus,
+#entradaRapida #erHora:focus{
+  outline:2px solid #26c6da;
+  outline-offset:1px;
+  border-color:#80deea;
+}
+#entradaRapida #erFecha::-webkit-calendar-picker-indicator,
+#entradaRapida #erHora::-webkit-calendar-picker-indicator{
+  /* Dar color brillante al icono nativo de calendario/reloj, no al campo */
+  filter:brightness(0) invert(1) !important;
+  opacity:1 !important;
+  cursor:pointer;
+}
+
+/* Cabecera del calendario: compacta sin alterar los controles */
+.calendar-header{min-height:34px}
+.calendar-header #prev,.calendar-header #next{width:34px;min-width:34px;min-height:32px;padding:4px;border-radius:8px}
+.calendar-header #todayBtn{min-height:32px;padding:4px 8px!important;font-size:.82rem}
+.calendar-header #monthTitle{font-size:1rem;line-height:1.1;letter-spacing:.1px}
+@media(max-width:520px){
+  .calendar-header{gap:4px!important;margin-bottom:5px!important}
+  .calendar-header #prev,.calendar-header #next{width:32px;min-width:32px;min-height:31px}
+  .calendar-header #todayBtn{font-size:.75rem}
+  .calendar-header #monthTitle{font-size:.94rem}
+}
+
+
+.reportToggle{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;color:var(--green,#00e676);font:inherit;font-weight:800;text-align:left;padding:0 0 10px;cursor:pointer;}
+.reportChevron{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--border,#343b42);border-radius:8px;color:#fff;transition:transform .18s ease,background .18s ease;}
+.reportToggle:hover .reportChevron,.reportToggle:focus-visible .reportChevron{background:#26343a;outline:1px solid #00dca0;}
+.reportToggle[aria-expanded="false"] .reportChevron{transform:rotate(-90deg);}
+.reportBody[hidden]{display:none!important;}
+.reportCard .reportToggle{font-size:1rem;}
 </style>
 
 <style>
@@ -347,6 +404,127 @@ label{line-height:1.35}
 }
 
 </style>
+
+<style id="mejora-dia-hoy-seleccionado">
+/* Distinguir claramente el día actual del día seleccionado. */
+.cal.today:not(.sel){
+  border:2px solid #f4d35e !important;
+  box-shadow:inset 0 0 0 1px #f4d35e55 !important;
+  background:#202329;
+}
+.cal.today:not(.sel)::before{
+  content:"HOY";
+  position:absolute;top:3px;right:4px;
+  font-size:.48rem;line-height:1;font-weight:800;letter-spacing:.03em;
+  color:#f4d35e;
+}
+.cal.sel{
+  background:#00e676 !important;
+  color:#06100a !important;
+  border:2px solid #00e676 !important;
+  box-shadow:0 0 0 2px #00e67655 !important;
+}
+/* Si hoy también está seleccionado, se conserva el verde y se añade un borde blanco. */
+.cal.today.sel{
+  border:2px solid #fff !important;
+  box-shadow:0 0 0 2px #00e676, inset 0 0 0 1px #ffffff55 !important;
+}
+.cal.today.sel::before{
+  content:"HOY";
+  position:absolute;top:3px;right:4px;
+  font-size:.48rem;line-height:1;font-weight:900;letter-spacing:.03em;
+  color:#06100a;
+}
+</style>
+
+<style id="mejora-linea-busqueda">
+/* Búsqueda más visible, con realce al escribir y botón de limpieza claro. */
+#agendaSearch{
+  min-height:42px;
+  margin:0;
+  padding:10px 13px;
+  background:#171d21;
+  border:1px solid #46515a;
+  border-radius:9px;
+  color:#fff;
+  font-size:.92rem;
+  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+#agendaSearch::placeholder{color:#aab6c2;opacity:1}
+#agendaSearch:hover{border-color:#687782}
+#agendaSearch:focus{
+  outline:none;
+  background:#17252a;
+  border-color:#29b6f6;
+  box-shadow:0 0 0 2px #29b6f644;
+}
+#agendaSearchClear{
+  min-width:42px;
+  min-height:42px;
+  padding:8px 12px;
+  margin:0;
+  border-radius:9px;
+  color:#fff;
+  font-size:1.05rem;
+  font-weight:bold;
+  transition:background .18s ease,border-color .18s ease,color .18s ease;
+}
+#agendaSearchClear:hover,#agendaSearchClear:focus-visible{
+  outline:none;
+  background:#26343b;
+  border-color:#29b6f6;
+  color:#29b6f6;
+}
+</style>
+
+<style>
+
+/* Ajuste visual: tarjetas más compactas en los informes mensual y anual. */
+#monthList .event,
+#annualList .event{
+  padding:7px 9px;
+  margin-bottom:5px;
+  border-radius:7px;
+}
+#monthList .event .etype,
+#annualList .event .etype{
+  font-size:.59rem;
+  line-height:1.15;
+  margin-bottom:1px;
+}
+#monthList .event .edate,
+#annualList .event .edate{
+  font-size:.67rem;
+  line-height:1.2;
+}
+#monthList .event .etext,
+#annualList .event .etext{
+  font-size:.88rem;
+  line-height:1.2;
+  margin:2px 0;
+}
+#monthList .event .actions,
+#annualList .event .actions{
+  gap:5px;
+  margin-top:4px;
+}
+#monthList .event .actions button,
+#annualList .event .actions button{
+  min-height:30px;
+  padding:5px 8px;
+  font-size:.66rem;
+}
+#monthList .event .agenda-attachments,
+#annualList .event .agenda-attachments{
+  margin-top:4px!important;
+  font-size:.72rem!important;
+}
+@media(max-width:480px){
+  #monthList .event, #annualList .event{padding:6px 8px;margin-bottom:4px}
+  #monthList .event .actions button, #annualList .event .actions button{min-height:29px;padding:4px 7px}
+}
+
+</style>
 </head>
 
 <body>
@@ -358,7 +536,7 @@ label{line-height:1.35}
 <section id="agenda" class="tab active">
 <div id="notice" class="notice"></div>
 <div class="card">
-<div style="display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:6px;align-items:center;margin-bottom:8px">
+<div class="calendar-header" style="display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:5px;align-items:center;margin-bottom:5px">
 <button class="btn out sm" id="prev">❮</button>
 <div style="display:flex;align-items:center;justify-content:center;gap:7px;min-width:0">
 <h2 id="monthTitle" style="margin:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></h2>
@@ -376,24 +554,62 @@ label{line-height:1.35}
 </div>
 <div class="calendar" id="calendar"></div>
 </div>
-<div class="card">
-<h2>📊 INFORME 3 DÍAS</h2>
-<div id="dayList"></div>
+<div class="card reportCard" id="report3Card">
+<div id="report3Body" class="reportBody"><div id="dayList"></div></div>
 </div>
-<div class="card">
-<h2>📊 INFORME MENSUAL</h2>
+<div class="card reportCard" id="reportMonthCard">
+<button class="reportToggle" type="button" aria-expanded="true" aria-controls="reportMonthBody">📊 INFORME MENSUAL <span class="reportChevron">▾</span></button>
+<div id="reportMonthBody" class="reportBody">
 <div class="sectionTitle" id="monthReportTitle"></div>
+<div id="monthSummary" class="monthSummary" aria-label="Resumen de avisos del mes"></div>
 <div class="filterbar" id="monthFilters"></div>
 <div id="monthList"></div>
-</div>
-<div class="card">
-<h2>📊 INFORME ANUAL</h2>
+</div></div>
+<div class="card reportCard" id="reportYearCard">
+<button class="reportToggle" type="button" aria-expanded="true" aria-controls="reportYearBody">📊 INFORME ANUAL <span class="reportChevron">▾</span></button>
+<div id="reportYearBody" class="reportBody">
 <div class="sectionTitle" id="yearReportTitle"></div>
 <div class="filterbar" id="annualFilters"></div>
 <div id="annualList"></div>
-</div>
+</div></div>
 </section>
 
+
+<section id="entradaRapida" class="tab">
+  <div class="card">
+    <h2>⚡ ENTRADA RÁPIDA</h2>
+    <p class="sub">Añade citas, cumpleaños, médicos, viajes y notas desde una sola pantalla. Cada anotación se guarda inmediatamente en la fecha que elijas.</p>
+    <label for="erFecha">📅 Fecha</label>
+    <input id="erFecha" type="date" style="margin-bottom:9px">
+    <div class="formrow" style="margin-bottom:9px">
+      <div>
+        <label for="erTipo">Tipo de aviso</label>
+        <select id="erTipo">
+          <option value="cita">🔵 Cita</option>
+          <option value="cumple">🎂 Cumpleaños</option>
+          <option value="medico">🩺 Médico</option>
+          <option value="viaje">✈️ Viaje</option>
+          <option value="tarea">📝 Nota / tarea</option>
+        </select>
+      </div>
+      <div>
+        <label for="erHora">Hora (opcional)</label>
+        <input id="erHora" type="time">
+      </div>
+    </div>
+    <label for="erTexto">Descripción</label>
+    <input id="erTexto" type="text" placeholder="¿Qué quieres recordar?" autocomplete="off" style="margin-bottom:9px">
+    <label for="erNota">Detalles (opcional)</label>
+    <textarea id="erNota" placeholder="Lugar, teléfono u otros detalles…" style="margin-bottom:8px"></textarea>
+    <label id="erRepetirBox" class="repeatbox" style="display:none"><input id="erRepetir" type="checkbox"> Repetir cada año</label>
+    <button class="btn" id="erGuardar" type="button">💾 AÑADIR Y GUARDAR</button>
+    <div id="erEstado" class="sub" role="status" aria-live="polite" style="margin-top:9px"></div>
+  </div>
+  <div class="card">
+    <h3>✅ Anotaciones añadidas en esta sesión</h3>
+    <div id="erGuardadas" class="archivoLista"><div class="archivoVacio">Todavía no has añadido ninguna anotación desde esta pantalla.</div></div>
+  </div>
+</section>
 
 <section id="archivo" class="tab">
   <h2>📁 ARCHIVO</h2>
@@ -462,6 +678,7 @@ label{line-height:1.35}
 <nav>
 <button id="navAgenda" class="active">📅<br>Agenda</button>
 <button id="navArchivo">📁<br>ARCHIVO</button>
+<button id="navEntradaRapida">⚡<br>Entrada rápida</button>
 <button id="navAjustes">⚙️<br>Ajustes</button>
 </nav>
 
@@ -559,15 +776,16 @@ const names={
 
 
 function showTab(n){
-  ["agenda","archivo","ajustes"].forEach(x=>{
+  ["agenda","archivo","entradaRapida","ajustes"].forEach(x=>{
     const el=$(x);
     if(el)el.classList.toggle("active",x===n);
   });
-  ["navAgenda","navArchivo","navAjustes"].forEach(id=>{
+  ["navAgenda","navArchivo","navEntradaRapida","navAjustes"].forEach(id=>{
     const el=$(id);
     if(el)el.classList.toggle("active",
       (id==="navAgenda"&&n==="agenda") ||
       (id==="navArchivo"&&n==="archivo") ||
+      (id==="navEntradaRapida"&&n==="entradaRapida") ||
       (id==="navAjustes"&&n==="ajustes"));
   });
   if(n==="agenda"){
@@ -576,11 +794,70 @@ function showTab(n){
     renderAnnualReport();
   }
   if(n==="archivo" && typeof renderArchivo==="function")renderArchivo();
+  if(n==="entradaRapida"){
+    if(typeof window.pintarEntradaRapida==="function")window.pintarEntradaRapida();
+    if(!$('erFecha').value)$('erFecha').value=today();
+    $('erTexto').focus({preventScroll:true});
+  }
 }
 
 $("navAgenda").onclick=()=>showTab("agenda");
 $("navArchivo").onclick=()=>showTab("archivo");
+$("navEntradaRapida").onclick=()=>showTab("entradaRapida");
 $("navAjustes").onclick=()=>showTab("ajustes");
+
+/* Entrada rápida: cada aviso se guarda individualmente en el almacén habitual. */
+(function(){
+  const fecha=$('erFecha'), tipo=$('erTipo'), hora=$('erHora'), texto=$('erTexto'), nota=$('erNota');
+  const repetirBox=$('erRepetirBox'), repetir=$('erRepetir');
+  const estado=$('erEstado'), lista=$('erGuardadas');
+  const recientes=[];
+  fecha.value=today();
+  function actualizarRepeticion(){
+    repetirBox.style.display=tipo.value==='cumple'?'flex':'none';
+    if(tipo.value!=='cumple')repetir.checked=false;
+  }
+  tipo.addEventListener('change',actualizarRepeticion);
+  actualizarRepeticion();
+  function pintarRecientes(){
+    // Mostrar solo anotaciones rápidas que sigan existiendo en la agenda.
+    // Si se elimina una cita desde el calendario, desaparece también de esta lista.
+    const vigentes = recientes.filter(x => events.some(e => e && e.id === x.id));
+    recientes.splice(0, recientes.length, ...vigentes);
+    if(!recientes.length){lista.innerHTML='<div class="archivoVacio">No hay anotaciones de esta sesión que sigan guardadas en la agenda.</div>';return;}
+    lista.innerHTML=recientes.map(x=>'<div class="archivoItem"><div><div class="titulo">'+esc(x.text)+'</div><div class="detalle">'+esc(fmt(x.date))+(x.time?' · '+esc(x.time):'')+' · '+esc((names[x.type]||x.type).replace(/^\S+\s*/,''))+'</div></div><span aria-label="Guardado">✅</span></div>').join('');
+  }
+  window.pintarEntradaRapida = pintarRecientes;
+  $('erGuardar').addEventListener('click',function(){
+    const f=fecha.value, t=texto.value.trim();
+    if(!f){alert('Selecciona la fecha del aviso.');fecha.focus();return;}
+    if(!t){alert('Escribe una descripción.');texto.focus();return;}
+    const x={id:'er_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),type:tipo.value,date:f,time:hora.value,text:t,note:nota.value.trim(),attachments:[],repeat:tipo.value==='cumple'&&repetir.checked,done:false,priority:'normal'};
+    try{
+      events.push(x);
+      try{save();}catch(err){events.pop();throw err;}
+    }catch(err){alert('No se ha podido guardar. El almacenamiento del navegador puede estar lleno.');return;}
+    // Confirmado el guardado en almacenamiento: limpiar el formulario antes
+    // de actualizar otras vistas, para que un fallo visual no interrumpa el flujo.
+    fecha.value='';
+    tipo.value='cita';
+    hora.value='';
+    texto.value='';
+    nota.value='';
+    repetir.checked=false;
+    actualizarRepeticion();
+    recientes.unshift(x);pintarRecientes();
+    estado.textContent='✅ Guardado en la agenda del '+fmt(f)+'. Puedes añadir el siguiente aviso.';
+    texto.focus();
+    // Actualiza las vistas de forma independiente; un fallo de renderizado no
+    // deshace el guardado ni impide que el formulario quede limpio.
+    try{renderToday();}catch(err){console.error('Error actualizando informe diario:',err);}
+    try{renderNext();}catch(err){console.error('Error actualizando próximos avisos:',err);}
+    try{renderCalendar();}catch(err){console.error('Error actualizando calendario:',err);}
+    try{if(typeof renderMonthlyReport==='function')renderMonthlyReport();}catch(err){console.error('Error informe mensual:',err);}
+    try{if(typeof renderAnnualReport==='function')renderAnnualReport();}catch(err){console.error('Error informe anual:',err);}
+  });
+})();
 
 
 /* =========================
@@ -732,7 +1009,19 @@ function renderMonthlyReport(){
   const title=$("monthReportTitle");
   if(title)title.textContent=(view.toLocaleDateString("es-ES",{month:"long"}))+"-"+view.getFullYear();
   const mes=allEvents().filter(e=>e.date>=inicio&&e.date<=finFecha)
-    .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+    .sort((a,b)=>(a.date+(a.time||"23:59")).localeCompare(b.date+(b.time||"23:59")));
+  const summary=$("monthSummary");
+  if(summary){
+    const tipos=[
+      {id:"cita",icon:"🔵",label:"Citas"},
+      {id:"medico",icon:"🔴",label:"Médicos"},
+      {id:"cumple",icon:"🟢",label:"Cumpleaños"},
+      {id:"viaje",icon:"🟡",label:"Viajes"},
+      {id:"tarea",icon:"🟣",label:"Notas"}
+    ];
+    summary.innerHTML='<div class="monthSummaryTotal"><span>📅 Total de avisos del mes</span><strong>'+mes.length+'</strong></div>'+
+      '<div class="monthSummary">'+tipos.map(t=>'<div class="monthSummaryItem"><span class="monthSummaryIcon">'+t.icon+'</span><strong>'+mes.filter(e=>e.type===t.id).length+'</strong><span>'+t.label+'</span></div>').join('')+'</div>';
+  }
   const a=filteredEvents(mes,monthFilter),box=$("monthList");
   if(!box)return;
   box.innerHTML=a.length?a.map(card).join(""):'<div class="empty">No hay '+esc(typeLabel(monthFilter).replace(/^.*? /,""))+' previstos en este mes.</div>';
@@ -773,13 +1062,19 @@ function renderDailyReport(){
     return dia.charAt(0).toUpperCase()+dia.slice(1)+" "+numero;
   };
 
+  const hoy=today();
   const bloques=fechas.map(fecha=>{
     const lista=allEvents().filter(e=>e.date===fecha)
-      .sort((a,b)=>(String(a.time||"")+"|"+String(a.text||"")).localeCompare(String(b.time||"")+"|"+String(b.text||"")));
+      .sort((a,b)=>(String(a.time||"23:59")+"|"+String(a.text||"")).localeCompare(String(b.time||"23:59")+"|"+String(b.text||"")));
+    const esHoy=fecha===hoy;
+    const encabezado='<div class="report3dayTitle"><span class="report3dayHeading">'+
+      '<span>'+fechaTexto(fecha)+'</span>'+
+      (esHoy?'<span class="report3dayToday">HOY</span>':'')+
+      '</span><span class="report3dayCount">'+(lista.length?(lista.length+(lista.length===1?' aviso':' avisos')):'')+'</span></div>';
 
     return '<div class="report3day">'+
-      '<div class="report3dayTitle">'+fechaTexto(fecha)+'</div>'+
-      (lista.length ? lista.map(card).join("") : '')+
+      encabezado+
+      (lista.length ? lista.map(card).join("") : '<div class="report3dayEmpty">Sin anotaciones previstas.</div>')+
     '</div>';
   }).join("");
 
@@ -1584,7 +1879,37 @@ window.addEventListener("focus",checkAlerts);
 setupMonthFilters();
 setupAnnualFilters();
 
+// Los informes mensual y anual se enlazan de forma directa y robusta.
+// El informe de 3 días permanece siempre visible.
+function toggleReport(btn){
+  const id=btn && btn.getAttribute('aria-controls');
+  const body=id ? document.getElementById(id) : null;
+  if(!body) return;
+  const abrir=body.hidden || btn.getAttribute('aria-expanded')!=='true';
+  btn.setAttribute('aria-expanded',String(abrir));
+  body.hidden=!abrir;
+  body.style.display=abrir?'':'none';
+  const card=btn.closest('.reportCard');
+  if(card) card.classList.toggle('report-open',abrir);
+  if(abrir){
+    try{
+      if(id==='reportMonthBody') renderMonthlyReport();
+      if(id==='reportYearBody') renderAnnualReport();
+    }catch(err){ console.error('No se pudo actualizar '+id,err); }
+  }
+}
+document.querySelectorAll('.reportToggle[aria-controls]').forEach(btn=>{
+  btn.onclick=function(ev){ ev.preventDefault(); toggleReport(this); };
+  const body=document.getElementById(btn.getAttribute('aria-controls'));
+  if(body){
+    const abrir=btn.getAttribute('aria-expanded')==='true';
+    body.hidden=!abrir;
+    body.style.display=abrir?'':'none';
+  }
+});
+
 renderCalendar();
+renderDailyReport();
 renderMonthlyReport();
 renderAnnualReport();
 
@@ -2433,6 +2758,39 @@ if ('serviceWorker' in navigator) {
   }else{
     recuperarPantallaInicial();
   }
+})();
+</script>
+
+
+
+
+<script>
+/* Reparación directa de los desplegables de informes. */
+(function(){
+  function instalarDesplegablesInformes(){
+    document.querySelectorAll('.reportToggle').forEach(function(btn){
+      if(btn.dataset.toggleReparado==='1') return;
+      btn.dataset.toggleReparado='1';
+      btn.addEventListener('click',function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        var id=btn.getAttribute('aria-controls');
+        var body=id ? document.getElementById(id) : null;
+        if(!body) return;
+        var abrir=body.hidden || btn.getAttribute('aria-expanded')==='false';
+        body.hidden=!abrir;
+        btn.setAttribute('aria-expanded',abrir?'true':'false');
+        if(abrir){
+          try{
+            if(id==='reportMonthBody' && typeof renderMonthlyReport==='function') renderMonthlyReport();
+            if(id==='reportYearBody' && typeof renderAnnualReport==='function') renderAnnualReport();
+          }catch(err){console.error('No se pudo actualizar el informe:',err);}
+        }
+      });
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',instalarDesplegablesInformes,{once:true});
+  else instalarDesplegablesInformes();
 })();
 </script>
 
