@@ -2400,5 +2400,41 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 
+
+<script>
+/* Mi Agenda 8.24 — recuperación de la pantalla inicial.
+   Garantiza que al abrir la aplicación se muestre Agenda con el calendario del mes actual. */
+(function(){
+  function recuperarPantallaInicial(){
+    try{
+      var agenda=document.getElementById("agenda");
+      var archivo=document.getElementById("archivo");
+      var ajustes=document.getElementById("ajustes");
+      var navAgenda=document.getElementById("navAgenda");
+      var navArchivo=document.getElementById("navArchivo");
+      var navAjustes=document.getElementById("navAjustes");
+      if(agenda) agenda.classList.add("active");
+      if(archivo) archivo.classList.remove("active");
+      if(ajustes) ajustes.classList.remove("active");
+      if(navAgenda) navAgenda.classList.add("active");
+      if(navArchivo) navArchivo.classList.remove("active");
+      if(navAjustes) navAjustes.classList.remove("active");
+      if(typeof view!=="undefined") view=new Date();
+      if(typeof selected!=="undefined" && typeof today==="function") selected=today();
+      if(typeof renderCalendar==="function") renderCalendar();
+      if(typeof renderMonthlyReport==="function") renderMonthlyReport();
+      if(typeof renderAnnualReport==="function") renderAnnualReport();
+    }catch(e){
+      console.warn("No se pudo restaurar la pantalla inicial de Mi Agenda:",e);
+    }
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",recuperarPantallaInicial,{once:true});
+  }else{
+    recuperarPantallaInicial();
+  }
+})();
+</script>
+
 </body>
 </html>
