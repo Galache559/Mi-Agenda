@@ -322,6 +322,18 @@ input:focus,select:focus,textarea:focus{
 .reportToggle[aria-expanded="false"] .reportChevron{transform:rotate(-90deg);}
 .reportBody[hidden]{display:none!important;}
 .reportCard .reportToggle{font-size:1rem;}
+
+/* ARCHIVO: carpetas plegadas para dar espacio; contactos van en apartado independiente */
+#archivo .archivoCarpeta:not(.archivoAbierta) > .archivoLista,
+#archivo .archivoCarpeta:not(.archivoAbierta) > .archivoCompacto{display:none}
+#archivo .archivoCarpeta .carpetaCabecera{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#archivo .archivoCarpeta .carpetaCabecera h3{flex:1;margin:0}
+#archivo .archivoCarpeta .carpetaCabecera button{cursor:pointer}
+#contactosArchivoLista .archivoContacto{padding:9px 10px;border-bottom:1px solid var(--bor)}\n#contactosArchivoLista .archivoContactoIndice{cursor:pointer;list-style-position:inside}\n#contactosArchivoLista .archivoContactoIndice strong{display:inline-block;padding:2px 0}\n#contactosArchivoLista .archivoContactoDatos{padding:8px 0 2px;display:grid;gap:5px}
+#contactosArchivoLista .archivoContactoDatos{min-width:0;overflow-wrap:anywhere}
+#contactosArchivoLista .archivoContactoDatos strong{display:block;margin-bottom:3px}
+#contactosArchivoLista .archivoContactoAcciones{display:flex;gap:4px;flex-shrink:0}
+
 </style>
 
 <style>
@@ -339,7 +351,7 @@ input:focus,select:focus,textarea:focus{
 .archivoFila{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;background:var(--item);border-radius:8px;font-size:.8rem}
 .archivoFila .archivoTitulo{font-weight:700;min-width:0}
 .archivoFila .archivoContexto{color:var(--sub);white-space:pre-wrap;min-width:0}
-.archivoFila input{width:100%;min-width:0;margin:0;padding:7px 8px;font-size:.82rem}
+.archivoFila input{width:100%;min-width:0;margin:0;padding:7px 8px;font-size:.82rem}.archivoFila.archivoNueva,.archivoFila:has(.nuevoDireccionArchivo){grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}.archivoFila.archivoNueva>div:last-child,.archivoFila:has(.nuevoDireccionArchivo)>div:last-child{grid-column:1/-1;justify-content:flex-end}
 .archivoNueva{background:transparent;border:1px dashed #46505a}
 .archivoNueva .archivoGuardar{white-space:nowrap}
 .archivoBorrarCarpeta{font-size:.78rem;padding:5px 8px;margin-left:5px}
@@ -665,9 +677,36 @@ label{line-height:1.35}
 <section id="archivo" class="tab">
   <h2>📁 ARCHIVO</h2>
 
-  <button class="btn" id="nuevaCarpetaArchivoBtn" type="button" style="margin-bottom:10px;">
-    ➕ NUEVA CARPETA
-  </button>
+  <div class="archivoTopBtns" id="archivoInicio" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+    <button class="btn" id="carpetasArchivoBtn" type="button">📁 CARPETAS</button>
+    <button class="btn" id="contactosArchivoBtn" type="button">👥 CONTACTOS</button>
+  </div>
+  <div id="carpetasArchivoPanel" style="display:none">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn out" id="volverArchivoBtn" type="button">↩ VOLVER</button>
+      <button class="btn" id="nuevaCarpetaArchivoBtn" type="button">➕ NUEVA</button>
+    </div>
+  </div>
+  <div id="contactosArchivoPanel" class="card" style="display:none;margin-bottom:12px">
+    <button class="btn out" id="volverContactosArchivoBtn" type="button" style="margin-bottom:10px">↩ VOLVER</button>
+    <div class="archivoContactosControles" style="display:flex;gap:8px;flex-wrap:nowrap;margin:0 0 10px">
+      <button class="btn out" id="listaContactoArchivoBtn" type="button" style="flex:1">📋 LISTA</button>
+      <button class="btn" id="nuevoContactoArchivoBtn" type="button" style="flex:1">➕ CREAR</button>
+      <button class="btn out" id="buscarContactoArchivoBtn" type="button" style="flex:1">🔎 BUSCAR</button>
+    </div>
+    <div id="buscarContactoArchivoPanel" style="display:none;margin:0 0 10px">
+      <input id="buscarContactoArchivoTexto" type="search" placeholder="Buscar contacto por nombre…" aria-label="Buscar contacto por nombre">
+    </div>
+    <div id="contactosArchivoLista" style="display:none"></div>
+    <div id="contactoArchivoForm" style="display:none;margin-top:10px;gap:8px">
+      <input id="contactoArchivoNombre" type="text" placeholder="Enunciado / nombre">
+      <input id="contactoArchivoDireccion" type="text" placeholder="Dirección">
+      <input id="contactoArchivoEmail" type="email" placeholder="Email">
+      <input id="contactoArchivoTelefono" type="tel" placeholder="Teléfono">
+      <textarea id="contactoArchivoNotas" placeholder="Observaciones (opcional)"></textarea>
+      <div style="display:flex;gap:8px"><button class="btn" id="guardarContactoArchivoBtn" type="button">💾 GUARDAR</button><button class="btn out" id="cancelarContactoArchivoBtn" type="button">CANCELAR</button></div>
+    </div>
+  </div>
 
   <div class="card archivoCarpeta archivoCarpeta-coche">
   <div class="carpetaCabecera">
@@ -1984,7 +2023,7 @@ function filasDatos(rows){
  ?'<div class="archivoCompacto">'+rows.map(x=>`
    <div class="archivoFila">
      <div class="archivoTitulo">${esc(x.titulo)}</div>
-     <div class="archivoContexto">${esc(x.detalle)}</div>
+     <div class="archivoContexto">${esc([x.detalle,x.direccion?'📍 '+x.direccion:'',x.telefono?'☎️ '+x.telefono:'',x.email?'✉️ '+x.email:''].filter(Boolean).join(' · '))}</div>
      <div>
        <button class="archiveIconBtn editBtn" type="button" title="Editar apartado" aria-label="Editar apartado" onclick="editarArchivo('${x.id}')">✏️</button>
        <button class="archiveIconBtn deleteBtn" type="button" title="Borrar apartado" aria-label="Borrar apartado" onclick="borrarArchivo('${x.id}')">🗑️</button>
@@ -2030,7 +2069,7 @@ window.renderArchivo=function(){
           const obj=typeof item==='string'?{id:'legacy_'+ci+'_'+ai,titulo:item,contexto:''}:item;
           return `<div class="archivoFila">
             <div class="archivoTitulo">${esc(obj.titulo)}</div>
-            <div class="archivoContexto">${esc(obj.contexto||'')}</div>
+            <div class="archivoContexto">${esc([obj.contexto,obj.direccion?'📍 '+obj.direccion:'',obj.telefono?'☎️ '+obj.telefono:'',obj.email?'✉️ '+obj.email:''].filter(Boolean).join(' · '))}</div>
             <div>
               <button class="archiveIconBtn editBtn" type="button" title="Editar apartado" aria-label="Editar apartado" onclick="editarApartadoArchivo(${ci},${ai})">✏️</button>
               <button class="archiveIconBtn deleteBtn" type="button" title="Borrar apartado" aria-label="Borrar apartado" onclick="borrarApartadoArchivo(${ci},${ai})">🗑️</button>
@@ -2063,10 +2102,13 @@ window.guardarNuevoFijoArchivo=function(nombreCarpeta){
  const row=cont.querySelector('.archivoNueva');if(!row)return;
  const t=row.querySelector('.nuevoTituloArchivo').value.trim();
  const d=row.querySelector('.nuevoContextoArchivo').value.trim();
+ const direccion=row.querySelector('.nuevoDireccionArchivo')?.value.trim()||'';
+ const telefono=row.querySelector('.nuevoTelefonoArchivo')?.value.trim()||'';
+ const email=row.querySelector('.nuevoEmailArchivo')?.value.trim()||'';
  if(!t){row.querySelector('.nuevoTituloArchivo').focus();return}
  const a=getA();
  if(a.some(x=>x.categoria===nombreCarpeta && String(x.titulo||'').toLowerCase()===t.toLowerCase())){alert('Ese apartado ya existe en esta carpeta.');return}
- a.push({id:uid('archivo'),categoria:nombreCarpeta,titulo:t,detalle:d});
+ a.push({id:uid('archivo'),categoria:nombreCarpeta,titulo:t,detalle:d,direccion,telefono,email});
  localStorage.setItem(KEYA,JSON.stringify(a));renderArchivo();
 };
 
@@ -2098,11 +2140,14 @@ window.guardarNuevoApartadoArchivo=function(ci){
  const row=cont.querySelector('.archivoNueva');if(!row)return;
  const t=row.querySelector('.nuevoTituloArchivo').value.trim();
  const d=row.querySelector('.nuevoContextoArchivo').value.trim();
+ const direccion=row.querySelector('.nuevoDireccionArchivo')?.value.trim()||'';
+ const telefono=row.querySelector('.nuevoTelefonoArchivo')?.value.trim()||'';
+ const email=row.querySelector('.nuevoEmailArchivo')?.value.trim()||'';
  if(!t){row.querySelector('.nuevoTituloArchivo').focus();return}
  const aps=e.carpetas[ci].apartados=e.carpetas[ci].apartados||[];
  const normalizados=aps.map(x=>typeof x==='string'?{id:uid('apartado'),titulo:x,contexto:''}:x);
  if(normalizados.some(x=>String(x.titulo||'').toLowerCase()===t.toLowerCase())){alert('Ese apartado ya existe en esta carpeta.');return}
- normalizados.push({id:uid('apartado'),titulo:t,contexto:d});
+ normalizados.push({id:uid('apartado'),titulo:t,contexto:d,direccion,telefono,email});
  e.carpetas[ci].apartados=normalizados;saveE(e);renderArchivo();
 };
 
@@ -2124,8 +2169,11 @@ window.editarApartadoArchivo=function(ci,ai){
  const cont=document.getElementById('carpetaLista_'+ci);if(!cont)return;
  const rows=cont.querySelectorAll('.archivoFila:not(.archivoNueva)');
  const row=rows[ai];if(!row)return;
- row.innerHTML=`<input class="nuevoTituloArchivo" type="text" value="${esc(obj.titulo)}" autocomplete="off">
-   <input class="nuevoContextoArchivo" type="text" value="${esc(obj.contexto||'')}" autocomplete="off">
+ row.innerHTML=`<input class="nuevoTituloArchivo" type="text" value="${esc(obj.titulo)}" placeholder="Nombre" autocomplete="off">
+   <input class="nuevoContextoArchivo" type="text" value="${esc(obj.contexto||'')}" placeholder="Observaciones" autocomplete="off">
+   <input class="nuevoDireccionArchivo" type="text" value="${esc(obj.direccion||'')}" placeholder="Dirección" autocomplete="off">
+   <input class="nuevoTelefonoArchivo" type="tel" value="${esc(obj.telefono||'')}" placeholder="Teléfono" autocomplete="off">
+   <input class="nuevoEmailArchivo" type="email" value="${esc(obj.email||'')}" placeholder="Email" autocomplete="off">
    <div style="display:flex;gap:4px"><button type="button" onclick="guardarEdicionApartadoArchivo(${ci},${ai})">💾</button><button type="button" onclick="renderArchivo()">✖️</button></div>`;
  row.querySelector('.nuevoTituloArchivo').focus();
 };
@@ -2136,7 +2184,7 @@ window.guardarEdicionApartadoArchivo=function(ci,ai){
  const t=row.querySelector('.nuevoTituloArchivo').value.trim();const d=row.querySelector('.nuevoContextoArchivo').value.trim();if(!t)return;
  const aps=e.carpetas[ci].apartados=e.carpetas[ci].apartados||[];
  const old=typeof aps[ai]==='string'?{id:uid('apartado')}:aps[ai];
- aps[ai]={id:old.id||uid('apartado'),titulo:t,contexto:d};saveE(e);renderArchivo();
+ aps[ai]={id:old.id||uid('apartado'),titulo:t,contexto:d,direccion:row.querySelector('.nuevoDireccionArchivo')?.value.trim()||'',telefono:row.querySelector('.nuevoTelefonoArchivo')?.value.trim()||'',email:row.querySelector('.nuevoEmailArchivo')?.value.trim()||''};saveE(e);renderArchivo();
 };
 
 window.borrarApartadoArchivo=function(ci,ai){
@@ -2149,8 +2197,11 @@ window.editarArchivo=function(id){
  const a=getA(),x=a.find(z=>z.id===id);if(!x)return;
  const row=[...document.querySelectorAll('.archivoFila')].find(r=>r.querySelector(`button[onclick="editarArchivo('${id}')"]`));
  if(!row)return;
- row.innerHTML=`<input class="nuevoTituloArchivo" type="text" value="${esc(x.titulo)}" autocomplete="off">
-   <input class="nuevoContextoArchivo" type="text" value="${esc(x.detalle||'')}" autocomplete="off">
+ row.innerHTML=`<input class="nuevoTituloArchivo" type="text" value="${esc(x.titulo)}" placeholder="Nombre" autocomplete="off">
+   <input class="nuevoContextoArchivo" type="text" value="${esc(x.detalle||'')}" placeholder="Observaciones" autocomplete="off">
+   <input class="nuevoDireccionArchivo" type="text" value="${esc(x.direccion||'')}" placeholder="Dirección" autocomplete="off">
+   <input class="nuevoTelefonoArchivo" type="tel" value="${esc(x.telefono||'')}" placeholder="Teléfono" autocomplete="off">
+   <input class="nuevoEmailArchivo" type="email" value="${esc(x.email||'')}" placeholder="Email" autocomplete="off">
    <div style="display:flex;gap:4px"><button type="button" onclick="guardarEdicionArchivo('${id}')">💾</button><button type="button" onclick="renderArchivo()">✖️</button></div>`;
  row.querySelector('.nuevoTituloArchivo').focus();
 };
@@ -2158,16 +2209,52 @@ window.guardarEdicionArchivo=function(id){
  const a=getA(),x=a.find(z=>z.id===id);if(!x)return;
  const row=[...document.querySelectorAll('.archivoFila')].find(r=>r.querySelector(`button[onclick="guardarEdicionArchivo('${id}')"]`));if(!row)return;
  const t=row.querySelector('.nuevoTituloArchivo').value.trim(),d=row.querySelector('.nuevoContextoArchivo').value.trim();if(!t)return;
- x.titulo=t;x.detalle=d;localStorage.setItem(KEYA,JSON.stringify(a));renderArchivo();
+ x.titulo=t;x.detalle=d;x.direccion=row.querySelector('.nuevoDireccionArchivo')?.value.trim()||'';x.telefono=row.querySelector('.nuevoTelefonoArchivo')?.value.trim()||'';x.email=row.querySelector('.nuevoEmailArchivo')?.value.trim()||'';localStorage.setItem(KEYA,JSON.stringify(a));renderArchivo();
 };
 window.borrarArchivo=function(id){
  if(!confirm("¿Eliminar este dato?"))return;
  localStorage.setItem(KEYA,JSON.stringify(getA().filter(x=>x.id!==id)));renderArchivo();
 };
 
+const CONTACTOS_KEY="mi_agenda_contactos_archivo_v1";
+function leerContactos(){try{const a=JSON.parse(localStorage.getItem(CONTACTOS_KEY)||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}}
+function guardarContactos(a){localStorage.setItem(CONTACTOS_KEY,JSON.stringify(a));pintarContactos()}
+function pintarContactos(){
+ const cont=document.getElementById('contactosArchivoLista');if(!cont)return;
+ const q=(document.getElementById('buscarContactoArchivoTexto')?.value||'').trim().toLocaleLowerCase('es');
+ const a=leerContactos().map((c,i)=>({...c,_indiceOriginal:i}))
+   .sort((x,y)=>(x.nombre||'').localeCompare(y.nombre||'','es',{sensitivity:'base'}))
+   .filter(c=>(c.nombre||'').toLocaleLowerCase('es').includes(q));
+ cont.innerHTML=a.length?a.map(c=>`<details class="archivoContacto"><summary class="archivoContactoIndice"><strong>${esc(c.nombre)}</strong><span class="archivoAbrirFicha">ABRIR FICHA　⌄</span></summary><div class="archivoContactoDatos">${c.direccion?`<div>📍 ${esc(c.direccion)}</div>`:''}${c.email?`<div>✉️ <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}${c.telefono?`<div>☎️ <a href="tel:${esc(c.telefono)}">${esc(c.telefono)}</a></div>`:''}${c.notas?`<div class="sub">${esc(c.notas)}</div>`:''}<div class="archivoContactoAcciones"><button type="button" title="Editar" onclick="editarContactoArchivo(${c._indiceOriginal})">✏️</button><button type="button" title="Borrar" onclick="borrarContactoArchivo(${c._indiceOriginal})">🗑️</button></div></div></details>`).join(''):'<div class="archivoVacio">'+(q?'No hay contactos que coincidan.':'Todavía no hay contactos.')+'</div>';
+}
+function limpiarContactoForm(){['Nombre','Direccion','Email','Telefono','Notas'].forEach(k=>{const el=document.getElementById('contactoArchivo'+k);if(el)el.value=''});document.getElementById('contactoArchivoForm').style.display='none';document.getElementById('guardarContactoArchivoBtn').dataset.edit='';}
+window.editarContactoArchivo=function(i){const c=leerContactos()[i];if(!c)return;const vals={Nombre:c.nombre,Direccion:c.direccion,Email:c.email,Telefono:c.telefono,Notas:c.notas};Object.entries(vals).forEach(([k,v])=>document.getElementById('contactoArchivo'+k).value=v||'');document.getElementById('guardarContactoArchivoBtn').dataset.edit=String(i);document.getElementById('contactoArchivoForm').style.display='grid';};
+window.borrarContactoArchivo=function(i){if(!confirm('¿Borrar este contacto?'))return;const a=leerContactos();a.splice(i,1);guardarContactos(a)};
 document.addEventListener("DOMContentLoaded",function(){
- const btn=document.getElementById("nuevaCarpetaArchivoBtn");
- if(btn)btn.onclick=nuevaCarpetaArchivo;
+ const btn=document.getElementById("nuevaCarpetaArchivoBtn");if(btn)btn.onclick=nuevaCarpetaArchivo;
+ const carpetasBtn=document.getElementById('carpetasArchivoBtn'),carpetasPanel=document.getElementById('carpetasArchivoPanel');
+ const contactBtn=document.getElementById('contactosArchivoBtn'),panel=document.getElementById('contactosArchivoPanel');
+ const carpetaCards=[...document.querySelectorAll('#archivo .archivoCarpeta')];
+ function modoArchivo(modo){
+   carpetasPanel.style.display=modo==='carpetas'?'block':'none';
+   panel.style.display=modo==='contactos'?'block':'none';
+   carpetaCards.forEach(card=>card.style.display=modo==='carpetas'?'':'none');
+   document.getElementById('archivoInicio').style.display=modo?'none':'flex';
+ }
+ carpetasBtn.onclick=()=>modoArchivo('carpetas');
+ document.getElementById('volverArchivoBtn').onclick=()=>modoArchivo('');
+ document.getElementById('volverContactosArchivoBtn').onclick=()=>modoArchivo('');
+ contactBtn.onclick=()=>{modoArchivo('contactos');pintarContactos()};
+ document.getElementById('listaContactoArchivoBtn').onclick=()=>{const list=document.getElementById('contactosArchivoLista');list.style.display=list.style.display==='none'?'block':'none';if(list.style.display==='block')pintarContactos()};
+ document.getElementById('nuevoContactoArchivoBtn').onclick=()=>{limpiarContactoForm();document.getElementById('contactoArchivoForm').style.display='grid';document.getElementById('contactoArchivoNombre').focus()};
+ const buscarBtn=document.getElementById('buscarContactoArchivoBtn'),buscarPanel=document.getElementById('buscarContactoArchivoPanel'),buscarInput=document.getElementById('buscarContactoArchivoTexto');
+ buscarBtn.onclick=()=>{const open=buscarPanel.style.display!=='none';buscarPanel.style.display=open?'none':'block';if(!open){buscarInput.focus();document.getElementById('contactosArchivoLista').style.display='block';pintarContactos()}else{buscarInput.value='';pintarContactos()}};
+ buscarInput.addEventListener('input',pintarContactos);
+ document.getElementById('cancelarContactoArchivoBtn').onclick=limpiarContactoForm;
+ document.getElementById('guardarContactoArchivoBtn').onclick=()=>{const nombre=document.getElementById('contactoArchivoNombre').value.trim();if(!nombre){document.getElementById('contactoArchivoNombre').focus();return}const c={nombre,direccion:document.getElementById('contactoArchivoDireccion').value.trim(),email:document.getElementById('contactoArchivoEmail').value.trim(),telefono:document.getElementById('contactoArchivoTelefono').value.trim(),notas:document.getElementById('contactoArchivoNotas').value.trim()};const a=leerContactos(),edit=document.getElementById('guardarContactoArchivoBtn').dataset.edit;if(edit!=='')a[Number(edit)]=c;else a.push(c);guardarContactos(a);limpiarContactoForm()};
+ // Click on folder heading toggles its body. Keep plus/delete buttons functional without toggling.
+ document.querySelectorAll('#archivo .archivoCarpeta .carpetaCabecera').forEach(h=>{h.addEventListener('click',ev=>{if(ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')})});
+ document.getElementById('carpetasNuevasArchivo')?.addEventListener('click',ev=>{const h=ev.target.closest('.carpetaCabecera');if(!h||ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')});
  renderArchivo();
 });
 })();
