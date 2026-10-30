@@ -2223,7 +2223,29 @@ document.addEventListener("DOMContentLoaded",function(){
  buscarBtn.onclick=()=>{const open=buscarPanel.style.display!=='none';buscarPanel.style.display=open?'none':'block';if(!open){buscarInput.focus();document.getElementById('contactosArchivoLista').style.display='block';pintarContactos()}else{buscarInput.value='';pintarContactos()}};
  buscarInput.addEventListener('input',pintarContactos);
  document.getElementById('cancelarContactoArchivoBtn').onclick=limpiarContactoForm;
- document.getElementById('guardarContactoArchivoBtn').onclick=()=>{const nombre=document.getElementById('contactoArchivoNombre').value.trim();if(!nombre){document.getElementById('contactoArchivoNombre').focus();return}const c={nombre,direccion:document.getElementById('contactoArchivoDireccion').value.trim(),email:document.getElementById('contactoArchivoEmail').value.trim(),telefono:document.getElementById('contactoArchivoTelefono').value.trim(),notas:document.getElementById('contactoArchivoNotas').value.trim()};const a=leerContactos(),edit=document.getElementById('guardarContactoArchivoBtn').dataset.edit;if(edit!=='')a[Number(edit)]=c;else a.push(c);guardarContactos(a);limpiarContactoForm()};
+ document.getElementById('guardarContactoArchivoBtn').onclick=()=>{
+   const nombre=document.getElementById('contactoArchivoNombre').value.trim();
+   if(!nombre){document.getElementById('contactoArchivoNombre').focus();return}
+   const c={
+     nombre,
+     direccion:document.getElementById('contactoArchivoDireccion').value.trim(),
+     email:document.getElementById('contactoArchivoEmail').value.trim(),
+     telefono:document.getElementById('contactoArchivoTelefono').value.trim(),
+     notas:document.getElementById('contactoArchivoNotas').value.trim()
+   };
+   const a=leerContactos();
+   const btn=document.getElementById('guardarContactoArchivoBtn');
+   const edit=btn.dataset.edit;
+   if(edit!==undefined && edit!==null && edit!==''){
+     const indice=Number(edit);
+     if(Number.isInteger(indice) && indice>=0 && indice<a.length) a[indice]=c;
+     else a.push(c);
+   }else{
+     a.push(c);
+   }
+   guardarContactos(a);
+   limpiarContactoForm();
+};
  // Click on folder heading toggles its body. Keep plus/delete buttons functional without toggling.
  document.querySelectorAll('#archivo .archivoCarpeta .carpetaCabecera').forEach(h=>{h.addEventListener('click',ev=>{if(ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')})});
  document.getElementById('carpetasNuevasArchivo')?.addEventListener('click',ev=>{const h=ev.target.closest('.carpetaCabecera');if(!h||ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')});
