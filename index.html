@@ -2195,7 +2195,7 @@ function pintarContactos(){
  const a=leerContactos().map((c,i)=>({...c,_indiceOriginal:i}))
    .sort((x,y)=>(x.nombre||'').localeCompare(y.nombre||'','es',{sensitivity:'base'}))
    .filter(c=>(c.nombre||'').toLocaleLowerCase('es').includes(q));
- cont.innerHTML=a.length?a.map(c=>`<details class="archivoContacto"><summary class="archivoContactoIndice"><strong>${esc(c.nombre)}</strong><span class="archivoAbrirFicha">ABRIR FICHA　⌄</span></summary><div class="archivoContactoDatos">${c.direccion?`<div>📍 ${esc(c.direccion)}</div>`:''}${c.email?`<div>✉️ <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}${c.telefono?`<div>☎️ <a href="tel:${esc(c.telefono)}">${esc(c.telefono)}</a></div>`:''}${c.notas?`<div class="sub">${esc(c.notas)}</div>`:''}<div class="archivoContactoAcciones"><button type="button" title="Editar" onclick="editarContactoArchivo(${c._indiceOriginal})">✏️</button><button type="button" title="Borrar" onclick="borrarContactoArchivo(${c._indiceOriginal})">🗑️</button></div></div></details>`).join(''):'<div class="archivoVacio">'+(q?'No hay contactos que coincidan.':'Todavía no hay contactos.')+'</div>';
+ cont.innerHTML=a.length?a.map(c=>`<details class="archivoContacto"><summary class="archivoContactoIndice"><strong>${esc(c.nombre)}</strong></summary><div class="archivoContactoDatos">${c.direccion?`<div>📍 ${esc(c.direccion)}</div>`:''}${c.email?`<div>✉️ <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}${c.telefono?`<div>☎️ <a href="tel:${esc(c.telefono)}">${esc(c.telefono)}</a></div>`:''}${c.notas?`<div class="sub">${esc(c.notas)}</div>`:''}<div class="archivoContactoAcciones"><button type="button" title="Editar" onclick="editarContactoArchivo(${c._indiceOriginal})">✏️</button><button type="button" title="Borrar" onclick="borrarContactoArchivo(${c._indiceOriginal})">🗑️</button></div></div></details>`).join(''):'<div class="archivoVacio">'+(q?'No hay contactos que coincidan.':'Todavía no hay contactos.')+'</div>';
 }
 function limpiarContactoForm(){['Nombre','Direccion','Email','Telefono','Notas'].forEach(k=>{const el=document.getElementById('contactoArchivo'+k);if(el)el.value=''});document.getElementById('contactoArchivoForm').style.display='none';document.getElementById('guardarContactoArchivoBtn').dataset.edit='';}
 window.editarContactoArchivo=function(i){const c=leerContactos()[i];if(!c)return;const vals={Nombre:c.nombre,Direccion:c.direccion,Email:c.email,Telefono:c.telefono,Notas:c.notas};Object.entries(vals).forEach(([k,v])=>document.getElementById('contactoArchivo'+k).value=v||'');document.getElementById('guardarContactoArchivoBtn').dataset.edit=String(i);document.getElementById('contactoArchivoForm').style.display='grid';};
@@ -2223,29 +2223,34 @@ document.addEventListener("DOMContentLoaded",function(){
  buscarBtn.onclick=()=>{const open=buscarPanel.style.display!=='none';buscarPanel.style.display=open?'none':'block';if(!open){buscarInput.focus();document.getElementById('contactosArchivoLista').style.display='block';pintarContactos()}else{buscarInput.value='';pintarContactos()}};
  buscarInput.addEventListener('input',pintarContactos);
  document.getElementById('cancelarContactoArchivoBtn').onclick=limpiarContactoForm;
- document.getElementById('guardarContactoArchivoBtn').onclick=()=>{
-   const nombre=document.getElementById('contactoArchivoNombre').value.trim();
-   if(!nombre){document.getElementById('contactoArchivoNombre').focus();return}
-   const c={
-     nombre,
-     direccion:document.getElementById('contactoArchivoDireccion').value.trim(),
-     email:document.getElementById('contactoArchivoEmail').value.trim(),
-     telefono:document.getElementById('contactoArchivoTelefono').value.trim(),
-     notas:document.getElementById('contactoArchivoNotas').value.trim()
-   };
-   const a=leerContactos();
-   const btn=document.getElementById('guardarContactoArchivoBtn');
-   const edit=btn.dataset.edit;
-   if(edit!==undefined && edit!==null && edit!==''){
-     const indice=Number(edit);
-     if(Number.isInteger(indice) && indice>=0 && indice<a.length) a[indice]=c;
-     else a.push(c);
-   }else{
-     a.push(c);
+ const guardarContactoBtn=document.getElementById('guardarContactoArchivoBtn');
+ guardarContactoBtn.onclick=()=>{
+   try {
+     const nombre=document.getElementById('contactoArchivoNombre').value.trim();
+     if(!nombre){alert('Escribe al menos el nombre del contacto.');document.getElementById('contactoArchivoNombre').focus();return;}
+     const c={
+       nombre,
+       direccion:document.getElementById('contactoArchivoDireccion').value.trim(),
+       email:document.getElementById('contactoArchivoEmail').value.trim(),
+       telefono:document.getElementById('contactoArchivoTelefono').value.trim(),
+       notas:document.getElementById('contactoArchivoNotas').value.trim()
+     };
+     const a=leerContactos();
+     const edit=guardarContactoBtn.dataset.edit;
+     if(edit!==undefined && edit!==null && edit!=='' && Number.isInteger(Number(edit)) && Number(edit)>=0 && Number(edit)<a.length) {
+       a[Number(edit)]=c;
+     } else {
+       a.push(c);
+     }
+     localStorage.setItem(CONTACTOS_KEY,JSON.stringify(a));
+     document.getElementById('contactosArchivoLista').style.display='block';
+     pintarContactos();
+     limpiarContactoForm();
+   } catch(err) {
+     console.error('Error al guardar contacto:',err);
+     alert('No se ha podido guardar el contacto. Comprueba el almacenamiento del navegador e inténtalo de nuevo.');
    }
-   guardarContactos(a);
-   limpiarContactoForm();
-};
+ };
  // Click on folder heading toggles its body. Keep plus/delete buttons functional without toggling.
  document.querySelectorAll('#archivo .archivoCarpeta .carpetaCabecera').forEach(h=>{h.addEventListener('click',ev=>{if(ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')})});
  document.getElementById('carpetasNuevasArchivo')?.addEventListener('click',ev=>{const h=ev.target.closest('.carpetaCabecera');if(!h||ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')});
