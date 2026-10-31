@@ -696,6 +696,11 @@ label{line-height:1.35}
     <div id="contactosRuta" class="sub" style="display:none;margin-bottom:10px">CONTACTOS</div>
     <div id="contactosNiveles" style="display:grid;gap:8px"></div>
     <div id="contactoArchivoForm" style="display:none;margin-top:10px;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <label class="btn out" for="contactoFotoOCR" style="cursor:pointer;margin:0">📷 FOTO / TARJETA</label>
+        <input id="contactoFotoOCR" type="file" accept="image/*" capture="environment" style="display:none">
+        <span id="contactoOCREstado" class="sub" role="status" style="font-size:.78rem"></span>
+      </div>
       <input id="contactoArchivoNombre" type="text" placeholder="Nombre del contacto">
       <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoTelefono">TELÉFONO</label><input id="contactoArchivoTelefono" type="tel" placeholder="Introducir teléfono"></div>
       <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoDireccion">DIRECCIÓN</label><input id="contactoArchivoDireccion" type="text" placeholder="Introducir dirección"></div>
@@ -3040,5 +3045,37 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
 })();
 </script>
 
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+(function(){
+ const input=document.getElementById('contactoFotoOCR'); if(!input)return;
+ const status=document.getElementById('contactoOCREstado');
+ input.addEventListener('change',async()=>{
+   const file=input.files&&input.files[0]; if(!file)return;
+   status.textContent='Leyendo la fotografía…';
+   try{
+     if(!window.Tesseract)throw new Error('No se pudo cargar el lector OCR. Comprueba la conexión a Internet.');
+     const result=await Tesseract.recognize(file,'spa+eng');
+     const raw=(result.data.text||'').replace(/\r/g,'');
+     const lines=raw.split('\n').map(x=>x.trim()).filter(Boolean);
+     const email=(raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]||'';
+     const phoneMatches=raw.match(/(?:\+?\d[\d .()/-]{7,}\d)/g)||[];
+     const phone=phoneMatches.map(x=>x.trim()).find(x=>x.replace(/\D/g,'').length>=9)||'';
+     const nameEl=document.getElementById('contactoArchivoNombre');
+     const emailEl=document.getElementById('contactoArchivoEmail');
+     const phoneEl=document.getElementById('contactoArchivoTelefono');
+     const addrEl=document.getElementById('contactoArchivoDireccion');
+     if(email)emailEl.value=email; if(phone)phoneEl.value=phone;
+     const clean=lines.filter(x=>x!==email&&!x.includes(phone)&&!/^https?:|^www\./i.test(x));
+     if(!nameEl.value&&clean.length)nameEl.value=clean[0].slice(0,100);
+     const addressLine=clean.find(x=>/(calle|c\.|avenida|avda|av\.|plaza|pza|paseo|carretera|\d{1,4}\s*(,|$)|\b\d{5}\b)/i.test(x));
+     if(addressLine&&!addrEl.value)addrEl.value=addressLine.slice(0,180);
+     status.textContent='Datos extraídos. Revísalos antes de guardar.';
+     if(!email&&!phone&&!addressLine)status.textContent+=' Puede que la foto no muestre todos los datos.';
+   }catch(e){status.textContent=e.message||'No se pudo leer la imagen.';}
+ });
+})();
+</script>
 </body>
 </html>
