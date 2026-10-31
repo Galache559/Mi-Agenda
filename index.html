@@ -689,23 +689,21 @@ label{line-height:1.35}
     <p class="sub" style="margin:0 0 10px">Organización libre en cuatro niveles: carpetas, subcarpetas, menús y submenús. Puedes crear y nombrar cada elemento a tu gusto.</p>
   </div>
   <div id="contactosArchivoPanel" class="card" style="display:none;margin-bottom:12px">
-    <button class="btn out" id="volverContactosArchivoBtn" type="button" style="margin-bottom:10px">↩ VOLVER</button>
-    <div class="archivoContactosControles" style="display:flex;gap:8px;flex-wrap:nowrap;margin:0 0 10px">
-      <button class="btn out" id="listaContactoArchivoBtn" type="button" style="flex:1">📋 LISTA</button>
-      <button class="btn" id="nuevoContactoArchivoBtn" type="button" style="flex:1">➕ CREAR</button>
-      <button class="btn out" id="buscarContactoArchivoBtn" type="button" style="flex:1">🔎 BUSCAR</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn out" id="volverContactosArchivoBtn" type="button">↩ VOLVER</button>
+      <button class="btn" id="nuevaCarpetaContactosBtn" type="button" title="Añadir carpeta" aria-label="Añadir carpeta" style="min-width:44px;height:40px;padding:0;font-size:22px">＋</button>
     </div>
-    <div id="buscarContactoArchivoPanel" style="display:none;margin:0 0 10px">
-      <input id="buscarContactoArchivoTexto" type="search" placeholder="Buscar contacto por nombre…" aria-label="Buscar contacto por nombre">
-    </div>
-    <div id="contactosArchivoLista" style="display:none"></div>
+    <div id="contactosRuta" class="sub" style="display:none;margin-bottom:10px">CONTACTOS</div>
+    <div id="contactosNiveles" style="display:grid;gap:8px"></div>
     <div id="contactoArchivoForm" style="display:none;margin-top:10px;gap:8px">
-      <input id="contactoArchivoNombre" type="text" placeholder="Enunciado / nombre">
-      <input id="contactoArchivoDireccion" type="text" placeholder="Dirección">
-      <input id="contactoArchivoEmail" type="email" placeholder="Email">
-      <input id="contactoArchivoTelefono" type="tel" placeholder="Teléfono">
-      <textarea id="contactoArchivoNotas" placeholder="Observaciones (opcional)"></textarea>
-      <div style="display:flex;gap:8px"><button class="btn" id="guardarContactoArchivoBtn" type="button">💾 GUARDAR</button><button class="btn out" id="cancelarContactoArchivoBtn" type="button">CANCELAR</button></div>
+      <input id="contactoArchivoNombre" type="text" placeholder="Nombre del contacto">
+      <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoTelefono">TELÉFONO</label><input id="contactoArchivoTelefono" type="tel" placeholder="Introducir teléfono"></div>
+      <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoDireccion">DIRECCIÓN</label><input id="contactoArchivoDireccion" type="text" placeholder="Introducir dirección"></div>
+      <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoEmail">EMAIL</label><input id="contactoArchivoEmail" type="email" placeholder="Introducir email"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="guardarContactoArchivoBtn" type="button">💾 GUARDAR</button>
+        <button class="btn out" id="cancelarContactoArchivoBtn" type="button">CANCELAR</button>
+      </div>
     </div>
   </div>
 
@@ -2186,70 +2184,124 @@ window.borrarArchivo=function(id){
  localStorage.setItem(KEYA,JSON.stringify(a.filter(x=>!removeIds.has(String(x.id)))));renderArchivo();
 };
 
-const CONTACTOS_KEY="mi_agenda_contactos_archivo_v1";
-function leerContactos(){try{const a=JSON.parse(localStorage.getItem(CONTACTOS_KEY)||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}}
-function guardarContactos(a){localStorage.setItem(CONTACTOS_KEY,JSON.stringify(a));pintarContactos()}
-function pintarContactos(){
- const cont=document.getElementById('contactosArchivoLista');if(!cont)return;
- const q=(document.getElementById('buscarContactoArchivoTexto')?.value||'').trim().toLocaleLowerCase('es');
- const a=leerContactos().map((c,i)=>({...c,_indiceOriginal:i}))
-   .sort((x,y)=>(x.nombre||'').localeCompare(y.nombre||'','es',{sensitivity:'base'}))
-   .filter(c=>(c.nombre||'').toLocaleLowerCase('es').includes(q));
- cont.innerHTML=a.length?a.map(c=>`<details class="archivoContacto"><summary class="archivoContactoIndice"><strong>${esc(c.nombre)}</strong></summary><div class="archivoContactoDatos">${c.direccion?`<div>📍 ${esc(c.direccion)}</div>`:''}${c.email?`<div>✉️ <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}${c.telefono?`<div>☎️ <a href="tel:${esc(c.telefono)}">${esc(c.telefono)}</a></div>`:''}${c.notas?`<div class="sub">${esc(c.notas)}</div>`:''}<div class="archivoContactoAcciones"><button type="button" title="Editar" onclick="editarContactoArchivo(${c._indiceOriginal})">✏️</button><button type="button" title="Borrar" onclick="borrarContactoArchivo(${c._indiceOriginal})">🗑️</button></div></div></details>`).join(''):'<div class="archivoVacio">'+(q?'No hay contactos que coincidan.':'Todavía no hay contactos.')+'</div>';
+const CONTACTOS_TREE_KEY="mi_agenda_contactos_tree_v1";
+function leerArbolContactos(){
+  try {
+    const raw=JSON.parse(localStorage.getItem(CONTACTOS_TREE_KEY)||"null");
+    if(raw&&Array.isArray(raw))return raw;
+  } catch(e){}
+  // Migración de contactos anteriores: se conservan agrupados en una carpeta raíz.
+  let anteriores=[];
+  try{const old=JSON.parse(localStorage.getItem("mi_agenda_contactos_archivo_v1")||"[]");if(Array.isArray(old))anteriores=old;}catch(e){}
+  const arbol=anteriores.length?[{id:"contactos-importados",nombre:"CONTACTOS ANTERIORES",children:[],contactos:anteriores}]:[];
+  localStorage.setItem(CONTACTOS_TREE_KEY,JSON.stringify(arbol));
+  return arbol;
 }
-function limpiarContactoForm(){['Nombre','Direccion','Email','Telefono','Notas'].forEach(k=>{const el=document.getElementById('contactoArchivo'+k);if(el)el.value=''});document.getElementById('contactoArchivoForm').style.display='none';document.getElementById('guardarContactoArchivoBtn').dataset.edit='';}
-window.editarContactoArchivo=function(i){const c=leerContactos()[i];if(!c)return;const vals={Nombre:c.nombre,Direccion:c.direccion,Email:c.email,Telefono:c.telefono,Notas:c.notas};Object.entries(vals).forEach(([k,v])=>document.getElementById('contactoArchivo'+k).value=v||'');document.getElementById('guardarContactoArchivoBtn').dataset.edit=String(i);document.getElementById('contactoArchivoForm').style.display='grid';};
-window.borrarContactoArchivo=function(i){if(!confirm('¿Borrar este contacto?'))return;const a=leerContactos();a.splice(i,1);guardarContactos(a)};
+function guardarArbolContactos(arbol){localStorage.setItem(CONTACTOS_TREE_KEY,JSON.stringify(arbol));pintarContactos()}
+function nuevoIdContacto(){return "ct-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)}
+function localizarCarpetaContacto(id,arbol){
+  for(const n of arbol||[]){
+    if(String(n.id)===String(id))return n;
+    const f=localizarCarpetaContacto(id,n.children||[]);
+    if(f)return f;
+  }
+  return null;
+}
+let rutaContactos=[];
+function carpetaContactoActual(arbol=leerArbolContactos()){
+  return rutaContactos.length?localizarCarpetaContacto(rutaContactos[rutaContactos.length-1],arbol):null;
+}
+function limpiarContactoForm(){
+  ["Nombre","Direccion","Telefono","Email"].forEach(k=>{const el=document.getElementById("contactoArchivo"+k);if(el)el.value=""});
+  const form=document.getElementById("contactoArchivoForm");if(form)form.style.display="none";
+  const btn=document.getElementById("guardarContactoArchivoBtn");if(btn)delete btn.dataset.edit;
+}
+function pintarContactos(){
+  const cont=document.getElementById("contactosNiveles");if(!cont)return;
+  const arbol=leerArbolContactos(),actual=carpetaContactoActual(arbol);
+  const ruta=document.getElementById("contactosRuta");
+  ruta.textContent="CONTACTOS"+(rutaContactos.length?"  ›  "+rutaContactos.map(id=>localizarCarpetaContacto(id,arbol)?.nombre||"").filter(Boolean).join("  ›  "):"");
+  cont.innerHTML="";
+  cont.style.gap="5px";
+  const lista=actual?[]:arbol;
+  const contactos=actual?(actual.contactos||[]):[];
+  function iconButton(glyph,title,fn,cls="btn out"){
+    const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=glyph;b.title=title;b.setAttribute("aria-label",title);
+    b.style.cssText="min-width:38px;width:38px;height:38px;padding:0;flex:0 0 38px;";b.onclick=fn;return b;
+  }
+  // Una fila compacta por carpeta: abrir y acciones juntas, sin renglones extra.
+  lista.slice().sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es",{sensitivity:"base"})).forEach(n=>{
+    const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:5px;width:100%;";
+    const abrir=document.createElement("button");abrir.type="button";abrir.className="btn out";abrir.textContent=n.nombre;
+    abrir.style.cssText="flex:1;min-width:0;text-align:left;height:40px;padding:0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+    abrir.onclick=()=>{rutaContactos.push(n.id);limpiarContactoForm();pintarContactos()};
+    const plus=iconButton("＋","Añadir contacto a este tema",()=>{rutaContactos.push(n.id);limpiarContactoForm();pintarContactos();const form=document.getElementById("contactoArchivoForm");if(form)form.style.display="grid";const nombre=document.getElementById("contactoArchivoNombre");if(nombre)nombre.focus()});
+    const ren=iconButton("✏️","Renombrar carpeta",()=>{const nombre=prompt("Nombre de la carpeta:",n.nombre);if(nombre&&nombre.trim()){const data=leerArbolContactos(),target=localizarCarpetaContacto(n.id,data);if(target){target.nombre=nombre.trim();guardarArbolContactos(data)}}});
+    const del=iconButton("🗑️","Eliminar carpeta",()=>{if(!confirm("¿Eliminar esta carpeta, sus subcarpetas y sus contactos?"))return;const data=leerArbolContactos();function quitar(arr){const i=arr.findIndex(x=>String(x.id)===String(n.id));if(i>=0){arr.splice(i,1);return true}return arr.some(x=>quitar(x.children||[]))}quitar(data);guardarArbolContactos(data)});
+    row.append(abrir,plus,ren,del);cont.appendChild(row);
+  });
+  if(actual){
+    const head=document.createElement("div");head.style.cssText="display:flex;align-items:center;gap:6px;margin:5px 0 2px;";
+    const label=document.createElement("div");label.textContent="";label.style.cssText="display:none;font-weight:600;flex:1;";
+    head.append(label);cont.appendChild(head);
+    contactos.slice().sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es",{sensitivity:"base"})).forEach(c=>{
+      const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:5px;width:100%;";
+      const details=document.createElement("details");details.style.cssText="flex:1;min-width:0;";
+      const summary=document.createElement("summary");summary.textContent="👤 "+c.nombre;summary.style.cssText="cursor:pointer;min-height:38px;display:flex;align-items:center;overflow-wrap:anywhere;";
+      const info=document.createElement("div");
+      info.style.cssText="padding:4px 8px 8px;font-size:14px;overflow-wrap:anywhere;display:grid;gap:5px;";
+      if(c.telefono){const t=document.createElement("div");t.textContent="TELÉFONO: "+c.telefono;info.appendChild(t)}
+      if(c.direccion){
+        const d=document.createElement("div");d.style.cssText="display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+        const direccion=document.createElement("span");direccion.textContent="DIRECCIÓN: "+c.direccion;d.appendChild(direccion);
+        const maps=document.createElement("a");maps.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(c.direccion);
+        maps.target="_blank";maps.rel="noopener noreferrer";maps.textContent="📍";maps.title="Abrir dirección en Google Maps";
+        maps.style.cssText="text-decoration:none;font-size:18px;";d.appendChild(maps);info.appendChild(d);
+      }
+      if(c.email){const e=document.createElement("div");e.textContent="EMAIL: "+c.email;info.appendChild(e)}
+      details.append(summary,info);
+      const edit=iconButton("✏️","Editar contacto",()=>{document.getElementById("contactoArchivoNombre").value=c.nombre||"";document.getElementById("contactoArchivoDireccion").value=c.direccion||"";document.getElementById("contactoArchivoTelefono").value=c.telefono||"";document.getElementById("contactoArchivoEmail").value=c.email||"";document.getElementById("guardarContactoArchivoBtn").dataset.edit=c.id;document.getElementById("contactoArchivoForm").style.display="grid"});
+      const del=iconButton("🗑️","Eliminar contacto",()=>{if(!confirm("¿Borrar este contacto?"))return;const data=leerArbolContactos(),node=carpetaContactoActual(data);if(node){node.contactos=(node.contactos||[]).filter(x=>String(x.id)!==String(c.id));guardarArbolContactos(data)}});
+      row.append(details,edit,del);cont.appendChild(row);
+    });
+  }
+  if(!lista.length&&!contactos.length){const empty=document.createElement("div");empty.className="archivoVacio";empty.textContent=actual?"Esta carpeta está vacía. Usa ＋ para añadir elementos.":"Pulsa ＋ para crear tu primera carpeta.";cont.appendChild(empty)}
+}
 document.addEventListener("DOMContentLoaded",function(){
  const btn=document.getElementById("nuevaCarpetaArchivoBtn");if(btn)btn.onclick=nuevaCarpetaArchivo;
- const carpetasBtn=document.getElementById('carpetasArchivoBtn'),carpetasPanel=document.getElementById('carpetasArchivoPanel');
- const contactBtn=document.getElementById('contactosArchivoBtn'),panel=document.getElementById('contactosArchivoPanel');
- const carpetasContenido=document.getElementById('carpetasNuevasArchivo');
- // Ocultar el listado completo desde el inicio, no solo las tarjetas individuales.
- if(carpetasContenido)carpetasContenido.style.display='none';
+ const carpetasBtn=document.getElementById("carpetasArchivoBtn"),carpetasPanel=document.getElementById("carpetasArchivoPanel");
+ const contactBtn=document.getElementById("contactosArchivoBtn"),panel=document.getElementById("contactosArchivoPanel");
+ const carpetasContenido=document.getElementById("carpetasNuevasArchivo");
+ if(carpetasContenido)carpetasContenido.style.display="none";
  function modoArchivo(modo){
-   carpetasPanel.style.display=modo==='carpetas'?'block':'none';
-   panel.style.display=modo==='contactos'?'block':'none';
-   if(carpetasContenido)carpetasContenido.style.display=modo==='carpetas'?'block':'none';
-   document.getElementById('archivoInicio').style.display=modo?'none':'flex';
+   carpetasPanel.style.display=modo==="carpetas"?"block":"none";
+   panel.style.display=modo==="contactos"?"block":"none";
+   if(carpetasContenido)carpetasContenido.style.display=modo==="carpetas"?"block":"none";
+   document.getElementById("archivoInicio").style.display=modo?"none":"flex";
  }
- carpetasBtn.onclick=()=>modoArchivo('carpetas');
- document.getElementById('volverArchivoBtn').onclick=()=>modoArchivo('');
- document.getElementById('volverContactosArchivoBtn').onclick=()=>modoArchivo('');
- contactBtn.onclick=()=>{modoArchivo('contactos');pintarContactos()};
- document.getElementById('listaContactoArchivoBtn').onclick=()=>{const list=document.getElementById('contactosArchivoLista');list.style.display=list.style.display==='none'?'block':'none';if(list.style.display==='block')pintarContactos()};
- document.getElementById('nuevoContactoArchivoBtn').onclick=()=>{limpiarContactoForm();document.getElementById('contactoArchivoForm').style.display='grid';document.getElementById('contactoArchivoNombre').focus()};
- const buscarBtn=document.getElementById('buscarContactoArchivoBtn'),buscarPanel=document.getElementById('buscarContactoArchivoPanel'),buscarInput=document.getElementById('buscarContactoArchivoTexto');
- buscarBtn.onclick=()=>{const open=buscarPanel.style.display!=='none';buscarPanel.style.display=open?'none':'block';if(!open){buscarInput.focus();document.getElementById('contactosArchivoLista').style.display='block';pintarContactos()}else{buscarInput.value='';pintarContactos()}};
- buscarInput.addEventListener('input',pintarContactos);
- document.getElementById('cancelarContactoArchivoBtn').onclick=limpiarContactoForm;
- const guardarContactoBtn=document.getElementById('guardarContactoArchivoBtn');
- guardarContactoBtn.onclick=()=>{
-   try {
-     const nombre=document.getElementById('contactoArchivoNombre').value.trim();
-     if(!nombre){alert('Escribe al menos el nombre del contacto.');document.getElementById('contactoArchivoNombre').focus();return;}
-     const c={
-       nombre,
-       direccion:document.getElementById('contactoArchivoDireccion').value.trim(),
-       email:document.getElementById('contactoArchivoEmail').value.trim(),
-       telefono:document.getElementById('contactoArchivoTelefono').value.trim(),
-       notas:document.getElementById('contactoArchivoNotas').value.trim()
-     };
-     const a=leerContactos();
-     const edit=guardarContactoBtn.dataset.edit;
-     if(edit!==undefined && edit!==null && edit!=='' && Number.isInteger(Number(edit)) && Number(edit)>=0 && Number(edit)<a.length) {
-       a[Number(edit)]=c;
-     } else {
-       a.push(c);
-     }
-     localStorage.setItem(CONTACTOS_KEY,JSON.stringify(a));
-     document.getElementById('contactosArchivoLista').style.display='block';
-     pintarContactos();
-     limpiarContactoForm();
-   } catch(err) {
-     console.error('Error al guardar contacto:',err);
-     alert('No se ha podido guardar el contacto. Comprueba el almacenamiento del navegador e inténtalo de nuevo.');
-   }
+ carpetasBtn.onclick=()=>modoArchivo("carpetas");
+ document.getElementById("volverArchivoBtn").onclick=()=>modoArchivo("");
+ document.getElementById("volverContactosArchivoBtn").onclick=()=>{if(rutaContactos.length)rutaContactos.pop();else modoArchivo("");limpiarContactoForm();pintarContactos()};
+ contactBtn.onclick=()=>{rutaContactos=[];modoArchivo("contactos");pintarContactos()};
+ document.getElementById("nuevaCarpetaContactosBtn").onclick=()=>{
+   const nombre=prompt(rutaContactos.length?"Nombre de la nueva subcarpeta:":"Nombre de la nueva carpeta:");
+   if(!nombre||!nombre.trim())return;
+   const data=leerArbolContactos(),node=carpetaContactoActual(data);
+   const lista=node?(node.children||(node.children=[])):data;
+   lista.push({id:nuevoIdContacto(),nombre:nombre.trim(),children:[],contactos:[]});
+   guardarArbolContactos(data);
+ };
+ document.getElementById("cancelarContactoArchivoBtn").onclick=limpiarContactoForm;
+ document.getElementById("guardarContactoArchivoBtn").onclick=()=>{
+   const nombre=document.getElementById("contactoArchivoNombre").value.trim();
+   if(!nombre){alert("Escribe el nombre.");return}
+   const c={id:nuevoIdContacto(),nombre,direccion:document.getElementById("contactoArchivoDireccion").value.trim(),telefono:document.getElementById("contactoArchivoTelefono").value.trim(),email:document.getElementById("contactoArchivoEmail").value.trim()};
+   const data=leerArbolContactos(),node=carpetaContactoActual(data);
+   if(!node){alert("Abre primero una carpeta para guardar el contacto.");return}
+   const edit=document.getElementById("guardarContactoArchivoBtn").dataset.edit;
+   if(edit){const old=(node.contactos||[]).find(x=>String(x.id)===String(edit));if(old)Object.assign(old,c,{id:old.id});else node.contactos.push(c)}
+   else {node.contactos=node.contactos||[];node.contactos.push(c)}
+   guardarArbolContactos(data);limpiarContactoForm();
  };
  // Click on folder heading toggles its body. Keep plus/delete buttons functional without toggling.
  document.querySelectorAll('#archivo .archivoCarpeta .carpetaCabecera').forEach(h=>{h.addEventListener('click',ev=>{if(ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')})});
