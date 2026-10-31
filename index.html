@@ -2232,8 +2232,11 @@ function pintarContactos(){
   // Una fila compacta por carpeta: abrir y acciones juntas, sin renglones extra.
   lista.slice().sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es",{sensitivity:"base"})).forEach(n=>{
     const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:5px;width:100%;";
-    const abrir=document.createElement("button");abrir.type="button";abrir.className="btn out";abrir.textContent=n.nombre;
-    abrir.style.cssText="flex:1;min-width:0;text-align:left;height:40px;padding:0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+    const abrir=document.createElement("button");abrir.type="button";abrir.className="btn out";
+    abrir.style.cssText="flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;height:40px;padding:0 10px;overflow:hidden;";
+    const nombreTema=document.createElement("span");nombreTema.textContent=n.nombre;nombreTema.style.cssText="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+    const contador=document.createElement("span");contador.textContent=String((n.contactos||[]).length);contador.style.cssText="flex:0 0 auto;margin-left:auto;text-align:right;font-weight:600;";
+    abrir.append(nombreTema,contador);
     abrir.onclick=()=>{rutaContactos.push(n.id);limpiarContactoForm();pintarContactos()};
     const plus=iconButton("＋","Añadir contacto a este tema",()=>{rutaContactos.push(n.id);limpiarContactoForm();pintarContactos();const form=document.getElementById("contactoArchivoForm");if(form)form.style.display="grid";const nombre=document.getElementById("contactoArchivoNombre");if(nombre)nombre.focus()});
     const ren=iconButton("✏️","Renombrar carpeta",()=>{const nombre=prompt("Nombre de la carpeta:",n.nombre);if(nombre&&nombre.trim()){const data=leerArbolContactos(),target=localizarCarpetaContacto(n.id,data);if(target){target.nombre=nombre.trim();guardarArbolContactos(data)}}});
@@ -2250,7 +2253,13 @@ function pintarContactos(){
       const summary=document.createElement("summary");summary.textContent="👤 "+c.nombre;summary.style.cssText="cursor:pointer;min-height:38px;display:flex;align-items:center;overflow-wrap:anywhere;";
       const info=document.createElement("div");
       info.style.cssText="padding:4px 8px 8px;font-size:14px;overflow-wrap:anywhere;display:grid;gap:5px;";
-      if(c.telefono){const t=document.createElement("div");t.textContent="TELÉFONO: "+c.telefono;info.appendChild(t)}
+      if(c.telefono){
+        const t=document.createElement("div");t.style.cssText="display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+        const numero=document.createElement("span");numero.textContent="TELÉFONO: "+c.telefono;t.appendChild(numero);
+        const llamada=document.createElement("a");llamada.href="tel:"+String(c.telefono).replace(/[^+\\d]/g,"");
+        llamada.textContent="📞";llamada.title="Llamar a "+c.telefono;llamada.setAttribute("aria-label","Llamar");
+        llamada.style.cssText="text-decoration:none;font-size:18px;";t.appendChild(llamada);info.appendChild(t)
+      }
       if(c.direccion){
         const d=document.createElement("div");d.style.cssText="display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
         const direccion=document.createElement("span");direccion.textContent="DIRECCIÓN: "+c.direccion;d.appendChild(direccion);
