@@ -3094,8 +3094,11 @@ const read=async c=>{
   );
 
   if(!response.ok){
-    throw new Error('El servicio OCR no responde correctamente.');
-  }
+  const errorText=await response.text();
+  throw new Error(
+    'Error del Worker ('+response.status+'): '+errorText
+  );
+}
 
   const result=await response.json();
 
