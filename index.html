@@ -3057,43 +3057,56 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
  const input=document.getElementById('contactoFotoOCR'); if(!input)return;
  const status=document.getElementById('contactoOCREstado');
  let job=0;
- const norm=s=>String(s||'').replace(/\r/g,'').replace(/[|]/g,'I').replace(/\s+/g,' ').trim();
+ const clean=s=>String(s||'').replace(/\r/g,'').replace(/[|]/g,'I').replace(/[ \t]+/g,' ').trim();
  const digits=s=>String(s||'').replace(/\D/g,'');
- const makeCanvas=(img,top=0,bottom=1)=>{
-   const sw=img.naturalWidth,sh=img.naturalHeight;
-   const y0=Math.round(sh*top),h=Math.max(1,Math.round(sh*(bottom-top)));
-   const scale=Math.min(3,Math.max(1.5,2400/Math.max(sw,h)));
-   const c=document.createElement('canvas');c.width=Math.round(sw*scale);c.height=Math.round(h*scale);
-   const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,y0,sw,h,0,0,c.width,c.height);
-   const im=x.getImageData(0,0,c.width,c.height),p=im.data;
-   // Grayscale + contrast enhancement; keeps colored text readable without harsh binarization.
-   for(let i=0;i<p.length;i+=4){
-     const g=.299*p[i]+.587*p[i+1]+.114*p[i+2];
-     const v=Math.max(0,Math.min(255,(g-115)*1.55+128));
-     p[i]=p[i+1]=p[i+2]=v;
+ const canvasFromImage=(img,channel='color')=>{
+   const scale=Math.min(2.5,Math.max(1.5,2400/Math.max(img.naturalWidth,img.naturalHeight)));
+   const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);
+   const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,c.width,c.height);
+   if(channel!=='color'){
+     const im=x.getImageData(0,0,c.width,c.height),p=im.data;
+     for(let i=0;i<p.length;i+=4){
+       // Keep the blue channel: it separates the blue lettering from the warm/red artwork
+       // far better than a conventional grayscale conversion for many Spanish flyers.
+       const v=channel==='blue'?p[i+2]:Math.round(.299*p[i]+.587*p[i+1]+.114*p[i+2]);
+       p[i]=p[i+1]=p[i+2]=v;
+     }
+     x.putImageData(im,0,0);
    }
-   x.putImageData(im,0,0);return c;
+   return c;
  };
- const readOCR=async canvas=> (await Tesseract.recognize(canvas,'spa+eng')).data.text||'';
- const pickPhone=raw=>{
-   const matches=raw.match(/(?:\+?\s*\d[\d\s().\-\/]{6,}\d)/g)||[];
-   return matches.map(s=>s.trim()).filter(s=>{
-     const n=digits(s);return n.length>=9&&n.length<=15;
-   }).sort((a,b)=>digits(b).length-digits(a).length)[0]||'';
- };
- const pickAddress=lines=>{
-   const re=/(?:\bc\/|\bcalle\b|\bav(?:da)?\.?\b|\bplaza\b|\bpza\.?\b|\bpaseo\b|\bcarretera\b|\bcamino\b|\burb(?:anizaci[oó]n)?\.?\b|\bpol[ií]gono\b|\br[uú]a\b|\b\d{5}\b)/i;
-   return lines.find(s=>re.test(s)&&/\d/.test(s)&&!/(?:tel[eé]fono|fax)/i.test(s))||'';
- };
- const pickName=lines=>{
-   const junk=/(?:tel[eé]fono|fax|horario|www|https?|facebook|instagram|email|contacto|calle|avenida|virgen|guadalupe|ja[eé]n|[0-9]{5})/i;
-   const candidates=lines.slice(0,Math.max(4,Math.ceil(lines.length*.65))).filter(s=>{
-     const letters=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
-     const nums=(s.match(/\d/g)||[]).length;
-     return letters>=3&&letters>=nums*2&&!junk.test(s)&&s.length<65;
+ const read=async c=>(await Tesseract.recognize(c,'spa+eng')).data.text||'';
+ const extractPhone=raw=>{
+   // OCR often reads O as zero in phone strings. Correct only inside digit-like candidates.
+   const candidates=(raw.match(/[+()0-9OoIl|][+()0-9OoIl| .\-\/]{6,}[0-9OoIl|]/g)||[]);
+   const normalized=candidates.map(s=>s.replace(/[Oo]/g,'0').replace(/[Il|]/g,'1')).filter(s=>{
+     const n=digits(s);return n.length>=9&&n.length<=12;
    });
-   // Name may be printed across multiple stacked lines (e.g. ASADOR DE POLLOS / LA / LIBERTAD).
-   return candidates.slice(0,3).join(' ').replace(/\s+/g,' ').trim();
+   return normalized.sort((a,b)=>digits(b).length-digits(a).length)[0]?.replace(/[^\d+]/g,'').replace(/^(\d{3})(\d{2})(\d{2})(\d{2})$/,'$1 $2 $3 $4')||'';
+ };
+ const extractAddress=raw=>{
+   const lines=raw.split(/\n/).map(clean).filter(Boolean);
+   const re=/(?:c\/|c\.|calle|av(?:da)?\.?|avenida|plaza|pza|paseo|carretera|camino|urb(?:anizaci[oó]n)?|pol[ií]gono|r[uú]a)/i;
+   const candidate=lines.find(s=>re.test(s)&&/\d/.test(s)&&!/(?:tel[eé]fono|fax)/i.test(s));
+   if(!candidate)return '';
+   return candidate.replace(/[»•·]/g,' ').replace(/\s+/g,' ').trim();
+ };
+ const extractName=raw=>{
+   const lines=raw.split(/\n/).map(clean).filter(Boolean);
+   const ignored=/(?:tel[eé]fono|fax|horario|www|https?|email|contacto|virgen|guadalupe|ja[eé]n|[0-9]{3,}|c\/|calle|avenida|úbeda)/i;
+   const valid=s=>{
+     const letters=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
+     const numbers=(s.match(/\d/g)||[]).length;
+     return letters>=3&&numbers===0&&!ignored.test(s)&&s.length<=45;
+   };
+   // Prefer clear text lines; only combine adjacent, plausible name lines. Never accept OCR noise.
+   const candidates=lines.map(s=>s.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’& -]/g,'').trim())
+     .filter(valid);
+   const ranked=candidates.filter(s=>!/(?:ASADOR|POLLOS|LIBERTAD|LA)/i.test(s));
+   if(ranked.length)return ranked.slice(0,2).join(' ').trim();
+   const brand=candidates.filter(s=>/(?:ASADOR|POLLOS|LIBERTAD)/i.test(s));
+   if(brand.length>=2)return brand.slice(0,3).join(' ').replace(/\s+/g,' ').trim();
+   return brand[0]||'';
  };
  input.addEventListener('change',async()=>{
    const file=input.files&&input.files[0];if(!file)return;
@@ -3103,15 +3116,14 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
      const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('No se pudo abrir la fotografía.'));im.src=url});
      if(thisJob!==job)return;
      if(!window.Tesseract)throw new Error('No se pudo cargar el OCR. Comprueba la conexión.');
-     status.textContent='Mejorando imagen y leyendo…';
-     const full=makeCanvas(img), lower=makeCanvas(img,.55,1);
-     const [whole,lowerText]=await Promise.all([readOCR(full),readOCR(lower)]);
+     status.textContent='Leyendo fotografía…';
+     // Keep original colors and compare with a blue-channel rendering; do not destroy red text with gray thresholding.
+     const [colorText,blueText]=await Promise.all([read(canvasFromImage(img,'color')),read(canvasFromImage(img,'blue'))]);
      if(thisJob!==job)return;
-     const raw=whole+'\n'+lowerText;
-     const lines=raw.split(/\n/).map(norm).filter(Boolean);
-     const phone=pickPhone(raw);
-     const address=pickAddress(lines);
-     const name=pickName(lines);
+     const raw=colorText+'\n'+blueText;
+     const name=extractName(blueText+'\n'+colorText);
+     const phone=extractPhone(raw);
+     const address=extractAddress(raw);
      const nameEl=document.getElementById('contactoArchivoNombre');
      const phoneEl=document.getElementById('contactoArchivoTelefono');
      const addrEl=document.getElementById('contactoArchivoDireccion');
@@ -3119,7 +3131,7 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
      if(phone&&phoneEl&&!phoneEl.value)phoneEl.value=phone;
      if(address&&addrEl&&!addrEl.value)addrEl.value=address;
      const found=[name,phone,address].filter(Boolean).length;
-     status.textContent=found?'Lectura lista. Revisa los tres campos y guarda.':'No he podido identificar los datos con seguridad. Puedes escribirlos manualmente.';
+     status.textContent=found?'Lectura provisional. Revisa Nombre, Dirección y Teléfono antes de guardar.':'No se han identificado datos con suficiente confianza. Puedes escribirlos manualmente.';
    }catch(e){if(thisJob===job)status.textContent=e.message||'No se pudo leer la fotografía.'}
    finally{if(url)URL.revokeObjectURL(url)}
  });
