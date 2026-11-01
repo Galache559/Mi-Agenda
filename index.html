@@ -2316,7 +2316,8 @@ document.addEventListener("DOMContentLoaded",function(){
    const edit=document.getElementById("guardarContactoArchivoBtn").dataset.edit;
    if(edit){const old=(node.contactos||[]).find(x=>String(x.id)===String(edit));if(old)Object.assign(old,c,{id:old.id});else node.contactos.push(c)}
    else {node.contactos=node.contactos||[];node.contactos.push(c)}
-   guardarArbolContactos(data);limpiarContactoForm();
+   try{guardarArbolContactos(data);limpiarContactoForm();}
+   catch(err){console.error("Error guardando contacto",err);alert("No se pudo guardar el contacto. Puede que el almacenamiento del navegador esté lleno. Prueba a guardar sin fotografía o libera espacio.");}
  };
  // Click on folder heading toggles its body. Keep plus/delete buttons functional without toggling.
  document.querySelectorAll('#archivo .archivoCarpeta .carpetaCabecera').forEach(h=>{h.addEventListener('click',ev=>{if(ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')})});
@@ -3059,10 +3060,10 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
    try{
      const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=URL.createObjectURL(file)});
      // Reduce stored photo size so local browser storage is less likely to run out.
-     const scale=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight));
+     const scale=Math.min(1,600/Math.max(img.naturalWidth,img.naturalHeight));
      const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
      const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
-     URL.revokeObjectURL(img.src);fotoContacto=canvas.toDataURL('image/jpeg',0.72);
+     URL.revokeObjectURL(img.src);fotoContacto=canvas.toDataURL('image/jpeg',0.42);
      if(!window.Tesseract)throw new Error('No se pudo cargar el OCR. Comprueba la conexión.');
      status.textContent='Leyendo texto…';
      const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{if(m.status==='recognizing text')status.textContent='Leyendo… '+Math.round((m.progress||0)*100)+'%';}});
