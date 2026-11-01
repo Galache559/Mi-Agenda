@@ -3057,59 +3057,71 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
  const input=document.getElementById('contactoFotoOCR'); if(!input)return;
  const status=document.getElementById('contactoOCREstado');
  let job=0;
- const clean=s=>String(s||'').replace(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/,'').replace(/[^\wÁÉÍÓÚÜÑáéíóúüñ&'.,/# -]/g,' ').replace(/\s+/g,' ').trim();
+ const norm=s=>String(s||'').replace(/\r/g,'').replace(/[|]/g,'I').replace(/\s+/g,' ').trim();
+ const digits=s=>String(s||'').replace(/\D/g,'');
+ const makeCanvas=(img,top=0,bottom=1)=>{
+   const sw=img.naturalWidth,sh=img.naturalHeight;
+   const y0=Math.round(sh*top),h=Math.max(1,Math.round(sh*(bottom-top)));
+   const scale=Math.min(3,Math.max(1.5,2400/Math.max(sw,h)));
+   const c=document.createElement('canvas');c.width=Math.round(sw*scale);c.height=Math.round(h*scale);
+   const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,y0,sw,h,0,0,c.width,c.height);
+   const im=x.getImageData(0,0,c.width,c.height),p=im.data;
+   // Grayscale + contrast enhancement; keeps colored text readable without harsh binarization.
+   for(let i=0;i<p.length;i+=4){
+     const g=.299*p[i]+.587*p[i+1]+.114*p[i+2];
+     const v=Math.max(0,Math.min(255,(g-115)*1.55+128));
+     p[i]=p[i+1]=p[i+2]=v;
+   }
+   x.putImageData(im,0,0);return c;
+ };
+ const readOCR=async canvas=> (await Tesseract.recognize(canvas,'spa+eng')).data.text||'';
+ const pickPhone=raw=>{
+   const matches=raw.match(/(?:\+?\s*\d[\d\s().\-\/]{6,}\d)/g)||[];
+   return matches.map(s=>s.trim()).filter(s=>{
+     const n=digits(s);return n.length>=9&&n.length<=15;
+   }).sort((a,b)=>digits(b).length-digits(a).length)[0]||'';
+ };
+ const pickAddress=lines=>{
+   const re=/(?:\bc\/|\bcalle\b|\bav(?:da)?\.?\b|\bplaza\b|\bpza\.?\b|\bpaseo\b|\bcarretera\b|\bcamino\b|\burb(?:anizaci[oó]n)?\.?\b|\bpol[ií]gono\b|\br[uú]a\b|\b\d{5}\b)/i;
+   return lines.find(s=>re.test(s)&&/\d/.test(s)&&!/(?:tel[eé]fono|fax)/i.test(s))||'';
+ };
+ const pickName=lines=>{
+   const junk=/(?:tel[eé]fono|fax|horario|www|https?|facebook|instagram|email|contacto|calle|avenida|virgen|guadalupe|ja[eé]n|[0-9]{5})/i;
+   const candidates=lines.slice(0,Math.max(4,Math.ceil(lines.length*.65))).filter(s=>{
+     const letters=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
+     const nums=(s.match(/\d/g)||[]).length;
+     return letters>=3&&letters>=nums*2&&!junk.test(s)&&s.length<65;
+   });
+   // Name may be printed across multiple stacked lines (e.g. ASADOR DE POLLOS / LA / LIBERTAD).
+   return candidates.slice(0,3).join(' ').replace(/\s+/g,' ').trim();
+ };
  input.addEventListener('change',async()=>{
-   const file=input.files&&input.files[0]; if(!file)return;
-   const thisJob=++job;
-   status.textContent='Preparando fotografía…';
-   let objectUrl='';
+   const file=input.files&&input.files[0];if(!file)return;
+   const thisJob=++job;status.textContent='Preparando fotografía…';let url='';
    try{
-     objectUrl=URL.createObjectURL(file);
-     const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('No se pudo abrir la fotografía.'));im.src=objectUrl});
+     url=URL.createObjectURL(file);
+     const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('No se pudo abrir la fotografía.'));im.src=url});
      if(thisJob!==job)return;
-     // Keep sufficient resolution for small print; never store the source image.
-     const scale=Math.min(1,2600/Math.max(img.naturalWidth,img.naturalHeight));
-     const canvas=document.createElement('canvas');
-     canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
-     const ctx=canvas.getContext('2d');
-     if(!ctx)throw new Error('No se pudo preparar la fotografía.');
-     ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
-     ctx.drawImage(img,0,0,canvas.width,canvas.height);
-     URL.revokeObjectURL(objectUrl);objectUrl='';
      if(!window.Tesseract)throw new Error('No se pudo cargar el OCR. Comprueba la conexión.');
-     status.textContent='Leyendo tarjeta…';
-     const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{
-       if(thisJob===job&&m.status==='recognizing text')status.textContent='Leyendo… '+Math.round((m.progress||0)*100)+'%';
-     }});
+     status.textContent='Mejorando imagen y leyendo…';
+     const full=makeCanvas(img), lower=makeCanvas(img,.55,1);
+     const [whole,lowerText]=await Promise.all([readOCR(full),readOCR(lower)]);
      if(thisJob!==job)return;
-     const raw=(result.data.text||'').replace(/\r/g,'');
-     const lines=raw.split('\n').map(x=>clean(x)).filter(Boolean);
+     const raw=whole+'\n'+lowerText;
+     const lines=raw.split(/\n/).map(norm).filter(Boolean);
+     const phone=pickPhone(raw);
+     const address=pickAddress(lines);
+     const name=pickName(lines);
      const nameEl=document.getElementById('contactoArchivoNombre');
      const phoneEl=document.getElementById('contactoArchivoTelefono');
      const addrEl=document.getElementById('contactoArchivoDireccion');
-     const junk=/\b(tel(?:éfono)?|fax|horario|abierto|cerrado|indicaciones|www|https?|facebook|instagram|email|e-mail|contacto)\b/i;
-     const addressPattern=/\b(calle|c\/|avenida|avda?\.?|plaza|pza\.?|paseo|carretera|camino|callejón|pol[ií]gono|urbanizaci[oó]n|urb\.?|r[uú]a|n[uú]mero|nº|portal|local|piso)\b|\b\d{5}\b/i;
-     const phones=(raw.match(/(?:\+?\d[\d\s()./-]{6,}\d)/g)||[])
-       .map(x=>x.trim()).filter(x=>{const n=x.replace(/\D/g,'');return n.length>=9&&n.length<=15&&!/^\d{5}$/.test(n)})
-       .sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length);
-     const phone=phones[0]||'';
-     if(phone&&!phoneEl.value)phoneEl.value=phone;
-     const address=lines.find(x=>addressPattern.test(x)&&!junk.test(x)&&/\d/.test(x));
-     if(address&&!addrEl.value)addrEl.value=address.slice(0,180);
-     // Name candidate: a readable early line, not a phone/address or common advertising label.
-     const name=lines.slice(0,8).find(x=>{
-       const letters=(x.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
-       const digits=(x.match(/\d/g)||[]).length;
-       return x.length>=3&&x.length<=75&&letters>=3&&letters>=digits*2&&!junk.test(x)&&!addressPattern.test(x)&&!/(?:\+?\d[\d\s()./-]{6,}\d)/.test(x);
-     });
-     if(name&&!nameEl.value)nameEl.value=name;
+     if(name&&nameEl&&!nameEl.value)nameEl.value=name;
+     if(phone&&phoneEl&&!phoneEl.value)phoneEl.value=phone;
+     if(address&&addrEl&&!addrEl.value)addrEl.value=address;
      const found=[name,phone,address].filter(Boolean).length;
-     status.textContent=found?'Datos reconocidos. Revisa Nombre, Dirección y Teléfono y pulsa GUARDAR.':'No he podido reconocer esos datos con seguridad. Puedes introducirlos manualmente.';
-   }catch(e){
-     if(thisJob===job)status.textContent=e.message||'No se pudo leer la fotografía.';
-   }finally{
-     if(objectUrl)URL.revokeObjectURL(objectUrl);
-   }
+     status.textContent=found?'Lectura lista. Revisa los tres campos y guarda.':'No he podido identificar los datos con seguridad. Puedes escribirlos manualmente.';
+   }catch(e){if(thisJob===job)status.textContent=e.message||'No se pudo leer la fotografía.'}
+   finally{if(url)URL.revokeObjectURL(url)}
  });
 })();
 </script>
