@@ -3075,7 +3075,40 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
    }
    return c;
  };
- const read=async c=>(await Tesseract.recognize(c,'spa+eng')).data.text||'';
+ 
+const read=async c=>{
+  const image=c.toDataURL('image/jpeg',0.92);
+
+  const response=await fetch(
+    'https://red-morning-0a30.javgalache.workers.dev/',
+    {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        image,
+        language:'spa'
+      })
+    }
+  );
+
+  if(!response.ok){
+    throw new Error('El servicio OCR no responde correctamente.');
+  }
+
+  const result=await response.json();
+
+  if(result.IsErroredOnProcessing){
+    throw new Error(
+      result.ErrorMessage?.join(' ') ||
+      'OCR.space no pudo leer la fotografía.'
+    );
+  }
+
+  return result.ParsedResults?.[0]?.ParsedText || '';
+};
+
  const extractPhone=raw=>{
    // OCR often reads O as zero in phone strings. Correct only inside digit-like candidates.
    const candidates=(raw.match(/[+()0-9OoIl|][+()0-9OoIl| .\-\/]{6,}[0-9OoIl|]/g)||[]);
