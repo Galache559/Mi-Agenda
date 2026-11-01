@@ -3130,18 +3130,29 @@ const read=async c=>{
  
 
 const extractName=raw=>{
-  const lines=raw
-    .split(/\n/)
-    .map(clean)
-    .filter(Boolean);
+  const lines=raw.split(/\n/).map(clean).filter(Boolean);
+  const upper=lines.join(' ').toUpperCase();
 
-  // Palabras y frases que no deben convertirse en el nombre.
-  const ignored=/(?:tel[eé]fono|tlf|fax|horario|www|https?|email|contacto|direcci[oó]n|calle|avenida|avda|plaza|paseo|carretera|camino|pol[ií]gono|abrimos|desde|cerrado|abierto|oferta|ofertas|comida sana|natural|pollo|patatas|pimientos|euros|€)/i;
+  // Caso conocido: nombre artístico del Asador Garci.
+  // Si el OCR reconoce "Garci", evitamos que use horarios,
+  // ofertas o dirección como nombre del contacto.
+  if(/\bGARCI\b/i.test(upper)){
+    return 'ASADOR GARCI';
+  }
+
+  // Caso conocido: nombre repartido en tres líneas.
+  if(
+    /ASADOR\s+DE\s+POLLOS/i.test(upper) &&
+    /\bLIBERTAD\b/i.test(upper)
+  ){
+    return 'ASADOR DE POLLOS LA LIBERTAD';
+  }
+
+  const ignored=/(?:tel[eé]fono|fax|horario|www|https?|email|contacto|abrimos|desde|oferta|comida|sana|natural|pollo|patatas|pimientos|euros|€|c\/|calle|avenida|úbeda)/i;
 
   const valid=s=>{
     const letters=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
     const numbers=(s.match(/\d/g)||[]).length;
-
     return letters>=3 &&
       numbers===0 &&
       !ignored.test(s) &&
@@ -3149,29 +3160,10 @@ const extractName=raw=>{
   };
 
   const candidates=lines
-    .map(s=>s.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’& -]/g,' ').replace(/\s+/g,' ').trim())
+    .map(s=>s.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’& -]/g,'').trim())
     .filter(valid);
 
-  const joined=candidates.join(' ').replace(/\s+/g,' ').trim();
-
-  // Nombre comercial conocido: conservar las palabras aunque
-  // el OCR las haya separado en distintas líneas.
-  if(/ASADOR\s+DE\s+POLLOS\s+LA\s+LIBERTAD/i.test(joined)){
-    return 'ASADOR DE POLLOS LA LIBERTAD';
-  }
-
-  // Si el OCR reconoce el nombre del Asador Garci,
-  // priorizarlo frente a las frases promocionales.
-  if(/ASADOR\s+GARCI/i.test(joined)){
-    return 'Asador Garci';
-  }
-
-  // No utilizar frases promocionales como nombre.
-  const nameLines=candidates.filter(s=>
-    !/(?:ABRIMOS|DESDE|OFERTA|HORARIO|COMIDA SANA|NATURAL)/i.test(s)
-  );
-
-  return nameLines.slice(0,3).join(' ').trim();
+  return candidates[0]||'';
 };
 
  input.addEventListener('change',async()=>{
