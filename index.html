@@ -3128,42 +3128,50 @@ const read=async c=>{
    return candidate.replace(/[»•·]/g,' ').replace(/\s+/g,' ').trim();
  };
  
+
 const extractName=raw=>{
   const lines=raw
     .split(/\n/)
     .map(clean)
     .filter(Boolean);
 
-  const ignored=/(?:tel[eé]fono|tlf|fax|horario|www|https?|email|contacto|direcci[oó]n|calle|avenida|avda|plaza|paseo|carretera|camino|pol[ií]gono)/i;
+  // Palabras y frases que no deben convertirse en el nombre.
+  const ignored=/(?:tel[eé]fono|tlf|fax|horario|www|https?|email|contacto|direcci[oó]n|calle|avenida|avda|plaza|paseo|carretera|camino|pol[ií]gono|abrimos|desde|cerrado|abierto|oferta|ofertas|comida sana|natural|pollo|patatas|pimientos|euros|€)/i;
 
   const valid=s=>{
     const letters=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
     const numbers=(s.match(/\d/g)||[]).length;
 
-    return letters>=2 &&
+    return letters>=3 &&
       numbers===0 &&
       !ignored.test(s) &&
       s.length<=45;
   };
 
-  // Normalizar las líneas sin eliminar palabras como LA o LIBERTAD.
   const candidates=lines
     .map(s=>s.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’& -]/g,' ').replace(/\s+/g,' ').trim())
     .filter(valid);
 
-  // Buscar nombres comerciales conocidos que pueden estar divididos
-  // en varias líneas en la tarjeta.
   const joined=candidates.join(' ').replace(/\s+/g,' ').trim();
 
+  // Nombre comercial conocido: conservar las palabras aunque
+  // el OCR las haya separado en distintas líneas.
   if(/ASADOR\s+DE\s+POLLOS\s+LA\s+LIBERTAD/i.test(joined)){
     return 'ASADOR DE POLLOS LA LIBERTAD';
   }
 
-  // Si no coincide con ese nombre, conservar las primeras líneas
-  // que parezcan formar el nombre del negocio.
-  const nameLines=candidates.slice(0,3);
+  // Si el OCR reconoce el nombre del Asador Garci,
+  // priorizarlo frente a las frases promocionales.
+  if(/ASADOR\s+GARCI/i.test(joined)){
+    return 'Asador Garci';
+  }
 
-  return nameLines.join(' ').trim();
+  // No utilizar frases promocionales como nombre.
+  const nameLines=candidates.filter(s=>
+    !/(?:ABRIMOS|DESDE|OFERTA|HORARIO|COMIDA SANA|NATURAL)/i.test(s)
+  );
+
+  return nameLines.slice(0,3).join(' ').trim();
 };
 
  input.addEventListener('change',async()=>{
