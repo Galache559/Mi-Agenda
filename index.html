@@ -2273,7 +2273,6 @@ function pintarContactos(){
         maps.style.cssText="text-decoration:none;font-size:18px;";d.appendChild(maps);info.appendChild(d);
       }
       if(c.email){const e=document.createElement("div");e.textContent="EMAIL: "+c.email;info.appendChild(e)}
-      if(c.foto){const foto=document.createElement("a");foto.href=c.foto;foto.target="_blank";foto.rel="noopener noreferrer";foto.textContent="🖼️ Ver fotografía original";foto.style.cssText="display:inline-block;margin-top:4px";info.appendChild(foto)}
       details.append(summary,info);
       const edit=iconButton("✏️","Editar contacto",()=>{document.getElementById("contactoArchivoNombre").value=c.nombre||"";document.getElementById("contactoArchivoDireccion").value=c.direccion||"";document.getElementById("contactoArchivoTelefono").value=c.telefono||"";document.getElementById("contactoArchivoEmail").value=c.email||"";document.getElementById("guardarContactoArchivoBtn").dataset.edit=c.id;document.getElementById("contactoArchivoForm").style.display="grid"});
       const del=iconButton("🗑️","Eliminar contacto",()=>{if(!confirm("¿Borrar este contacto?"))return;const data=leerArbolContactos(),node=carpetaContactoActual(data);if(node){node.contactos=(node.contactos||[]).filter(x=>String(x.id)!==String(c.id));guardarArbolContactos(data)}});
@@ -2310,14 +2309,14 @@ document.addEventListener("DOMContentLoaded",function(){
  document.getElementById("guardarContactoArchivoBtn").onclick=()=>{
    const nombre=document.getElementById("contactoArchivoNombre").value.trim();
    if(!nombre){alert("Escribe el nombre.");return}
-   const c={id:nuevoIdContacto(),nombre,direccion:document.getElementById("contactoArchivoDireccion").value.trim(),telefono:document.getElementById("contactoArchivoTelefono").value.trim(),email:document.getElementById("contactoArchivoEmail").value.trim(),foto:(window.miAgendaFotoContacto&&window.miAgendaFotoContacto())||""};
+   const c={id:nuevoIdContacto(),nombre,direccion:document.getElementById("contactoArchivoDireccion").value.trim(),telefono:document.getElementById("contactoArchivoTelefono").value.trim(),email:document.getElementById("contactoArchivoEmail").value.trim()};
    const data=leerArbolContactos(),node=carpetaContactoActual(data);
    if(!node){alert("Abre primero una carpeta para guardar el contacto.");return}
    const edit=document.getElementById("guardarContactoArchivoBtn").dataset.edit;
    if(edit){const old=(node.contactos||[]).find(x=>String(x.id)===String(edit));if(old)Object.assign(old,c,{id:old.id});else node.contactos.push(c)}
    else {node.contactos=node.contactos||[];node.contactos.push(c)}
    try{guardarArbolContactos(data);limpiarContactoForm();}
-   catch(err){console.error("Error guardando contacto",err);alert("No se pudo guardar el contacto. Puede que el almacenamiento del navegador esté lleno. Prueba a guardar sin fotografía o libera espacio.");}
+   catch(err){console.error("Error guardando contacto",err);alert("No se pudo guardar el contacto. Comprueba el almacenamiento del navegador.");}
  };
  // Click on folder heading toggles its body. Keep plus/delete buttons functional without toggling.
  document.querySelectorAll('#archivo .archivoCarpeta .carpetaCabecera').forEach(h=>{h.addEventListener('click',ev=>{if(ev.target.closest('button'))return;h.closest('.archivoCarpeta').classList.toggle('archivoAbierta')})});
