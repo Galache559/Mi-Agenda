@@ -678,7 +678,6 @@ label{line-height:1.35}
   <h2>📁 ARCHIVO</h2>
 
   <div class="archivoTopBtns" id="archivoInicio" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-    <button class="btn" id="leerImagenGeneralBtn" type="button">🖼️ LEER IMAGEN</button>
     <button class="btn" id="contactosArchivoBtn" type="button">👥 CONTACTOS</button>
     <button class="btn" id="carpetasArchivoBtn" type="button">📁 CARPETAS</button>
   </div>
@@ -705,7 +704,6 @@ label{line-height:1.35}
       <input id="contactoArchivoNombre" type="text" placeholder="Nombre del contacto">
       <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoTelefono">TELÉFONO</label><input id="contactoArchivoTelefono" type="tel" placeholder="Introducir teléfono"></div>
       <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoDireccion">DIRECCIÓN</label><input id="contactoArchivoDireccion" type="text" placeholder="Introducir dirección"></div>
-      <div style="display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px"><label for="contactoArchivoEmail">EMAIL</label><input id="contactoArchivoEmail" type="email" placeholder="Introducir email"></div>
       <div style="display:flex;gap:8px">
         <button class="btn" id="guardarContactoArchivoBtn" type="button">💾 GUARDAR</button>
         <button class="btn out" id="cancelarContactoArchivoBtn" type="button">CANCELAR</button>
@@ -2218,7 +2216,7 @@ function carpetaContactoActual(arbol=leerArbolContactos()){
   return rutaContactos.length?localizarCarpetaContacto(rutaContactos[rutaContactos.length-1],arbol):null;
 }
 function limpiarContactoForm(){
-  ["Nombre","Direccion","Telefono","Email"].forEach(k=>{const el=document.getElementById("contactoArchivo"+k);if(el)el.value=""});
+  ["Nombre","Direccion","Telefono"].forEach(k=>{const el=document.getElementById("contactoArchivo"+k);if(el)el.value=""});
   const form=document.getElementById("contactoArchivoForm");if(form)form.style.display="none";
   const btn=document.getElementById("guardarContactoArchivoBtn");if(btn)delete btn.dataset.edit;
 }
@@ -2273,9 +2271,8 @@ function pintarContactos(){
         maps.target="_blank";maps.rel="noopener noreferrer";maps.textContent="📍";maps.title="Abrir dirección en Google Maps";
         maps.style.cssText="text-decoration:none;font-size:18px;";d.appendChild(maps);info.appendChild(d);
       }
-      if(c.email){const e=document.createElement("div");e.textContent="EMAIL: "+c.email;info.appendChild(e)}
       details.append(summary,info);
-      const edit=iconButton("✏️","Editar contacto",()=>{document.getElementById("contactoArchivoNombre").value=c.nombre||"";document.getElementById("contactoArchivoDireccion").value=c.direccion||"";document.getElementById("contactoArchivoTelefono").value=c.telefono||"";document.getElementById("contactoArchivoEmail").value=c.email||"";document.getElementById("guardarContactoArchivoBtn").dataset.edit=c.id;document.getElementById("contactoArchivoForm").style.display="grid"});
+      const edit=iconButton("✏️","Editar contacto",()=>{document.getElementById("contactoArchivoNombre").value=c.nombre||"";document.getElementById("contactoArchivoDireccion").value=c.direccion||"";document.getElementById("contactoArchivoTelefono").value=c.telefono||"";document.getElementById("guardarContactoArchivoBtn").dataset.edit=c.id;document.getElementById("contactoArchivoForm").style.display="grid"});
       const del=iconButton("🗑️","Eliminar contacto",()=>{if(!confirm("¿Borrar este contacto?"))return;const data=leerArbolContactos(),node=carpetaContactoActual(data);if(node){node.contactos=(node.contactos||[]).filter(x=>String(x.id)!==String(c.id));guardarArbolContactos(data)}});
       row.append(details,edit,del);cont.appendChild(row);
     });
@@ -2310,7 +2307,7 @@ document.addEventListener("DOMContentLoaded",function(){
  document.getElementById("guardarContactoArchivoBtn").onclick=()=>{
    const nombre=document.getElementById("contactoArchivoNombre").value.trim();
    if(!nombre){alert("Escribe el nombre.");return}
-   const c={id:nuevoIdContacto(),nombre,direccion:document.getElementById("contactoArchivoDireccion").value.trim(),telefono:document.getElementById("contactoArchivoTelefono").value.trim(),email:document.getElementById("contactoArchivoEmail").value.trim()};
+   const c={id:nuevoIdContacto(),nombre,direccion:document.getElementById("contactoArchivoDireccion").value.trim(),telefono:document.getElementById("contactoArchivoTelefono").value.trim()};
    const data=leerArbolContactos(),node=carpetaContactoActual(data);
    if(!node){alert("Abre primero una carpeta para guardar el contacto.");return}
    const edit=document.getElementById("guardarContactoArchivoBtn").dataset.edit;
@@ -2534,7 +2531,8 @@ document.addEventListener("DOMContentLoaded",function(){
     archivo:"mi_agenda_archivo_v1",
     estructura:"mi_agenda_archivo_estructura_v1",
     cumpleanos:"mi_agenda_cumples_v1",
-    avisos:"mi_agenda_avisos_automaticos"
+    avisos:"mi_agenda_avisos_automaticos",
+    contactos:"mi_agenda_contactos_tree_v1"
   };
 
   function readKey(key,fallback){
@@ -2568,6 +2566,7 @@ document.addEventListener("DOMContentLoaded",function(){
       const agenda=validarArray(readKey(KEYS.agenda,[]),"Agenda");
       const archivo=validarArray(readKey(KEYS.archivo,[]),"Archivo");
       const cumpleanos=validarArray(readKey(KEYS.cumpleanos,[]),"Cumpleaños");
+      const contactos=validarArray(readKey(KEYS.contactos,[]),"Contactos");
       const estructura=readKey(KEYS.estructura,{carpetas:[]});
       if(!estructura || typeof estructura!=="object" || !Array.isArray(estructura.carpetas))
         throw new Error("La estructura de carpetas no tiene un formato válido.");
@@ -2581,12 +2580,13 @@ document.addEventListener("DOMContentLoaded",function(){
         archivo:archivo,
         estructuraArchivo:estructura,
         cumpleanosAnuales:cumpleanos,
+        contactos:contactos,
         avisosAutomaticos:avisos===null?"1":avisos,
-        resumen:{agenda:agenda.length,archivo:archivo.length,carpetasPersonalizadas:estructura.carpetas.length,cumpleanosAnuales:cumpleanos.length}
+        resumen:{agenda:agenda.length,archivo:archivo.length,carpetasPersonalizadas:estructura.carpetas.length,cumpleanosAnuales:cumpleanos.length,contactos:contactos.length}
       };
       const fecha=new Date().toISOString().slice(0,10);
       descargarJSON(backup,"Mi_Agenda_Copia_Completa_"+fecha+".json");
-      estadoCopia("✓ Copia completa descargada. Incluye "+agenda.length+" registros de agenda, "+archivo.length+" datos de archivo, "+estructura.carpetas.length+" carpetas personalizadas y "+cumpleanos.length+" cumpleaños.");
+      estadoCopia("✓ Copia completa descargada. Incluye "+agenda.length+" registros de agenda, "+archivo.length+" datos de archivo, "+estructura.carpetas.length+" carpetas personalizadas y "+cumpleanos.length+" cumpleaños, además de "+contactos.length+" carpetas de contactos.");
     }catch(e){
       estadoCopia("No se pudo crear la copia: "+(e&&e.message?e.message:"error inesperado"));
       alert("No se pudo crear la copia de seguridad. No se han modificado tus datos.\n\n"+(e&&e.message?e.message:"Error inesperado."));
@@ -2605,12 +2605,13 @@ document.addEventListener("DOMContentLoaded",function(){
       reader.onload=function(){
         try{
           const data=JSON.parse(reader.result);
-          let agenda=null,archivo=null,cumples=null,estructura=null,avisos=null;
+          let agenda=null,archivo=null,cumples=null,estructura=null,avisos=null,contactos=null;
           const secciones=[];
           if(data && typeof data==="object" && !Array.isArray(data)){
             if(Array.isArray(data.agenda)){agenda=data.agenda;secciones.push("Agenda: "+agenda.length);}
             if(Array.isArray(data.archivo)){archivo=data.archivo;secciones.push("Archivo: "+archivo.length);}
             if(Array.isArray(data.cumpleanosAnuales)){cumples=data.cumpleanosAnuales;secciones.push("Cumpleaños: "+cumples.length);}
+            if(Array.isArray(data.contactos)){contactos=data.contactos;secciones.push("Contactos: "+contactos.length+" carpetas");}
             if(data.estructuraArchivo && typeof data.estructuraArchivo==="object" && Array.isArray(data.estructuraArchivo.carpetas)){
               estructura=data.estructuraArchivo;secciones.push("Carpetas personalizadas: "+estructura.carpetas.length);
             }
@@ -2622,7 +2623,7 @@ document.addEventListener("DOMContentLoaded",function(){
             if(esAgenda&&!esArchivo){agenda=data;secciones.push("Agenda antigua: "+agenda.length);}
             else if(esArchivo){archivo=data;secciones.push("Archivo antiguo: "+archivo.length);}
           }
-          if(agenda===null&&archivo===null&&cumples===null&&estructura===null&&avisos===null)
+          if(agenda===null&&archivo===null&&cumples===null&&estructura===null&&avisos===null&&contactos===null)
             throw new Error("No se han encontrado datos compatibles de Mi Agenda.");
 
           let msg="Se han encontrado estas secciones:\n\n• "+secciones.join("\n• ");
@@ -2635,10 +2636,12 @@ document.addEventListener("DOMContentLoaded",function(){
           if(agenda!==null)validarArray(agenda,"Agenda");
           if(archivo!==null)validarArray(archivo,"Archivo");
           if(cumples!==null)validarArray(cumples,"Cumpleaños");
+          if(contactos!==null)validarArray(contactos,"Contactos");
           if(agenda!==null)localStorage.setItem(KEYS.agenda,JSON.stringify(agenda));
           if(archivo!==null)localStorage.setItem(KEYS.archivo,JSON.stringify(archivo));
           if(cumples!==null)localStorage.setItem(KEYS.cumpleanos,JSON.stringify(cumples));
           if(estructura!==null)localStorage.setItem(KEYS.estructura,JSON.stringify(estructura));
+          if(contactos!==null)localStorage.setItem(KEYS.contactos,JSON.stringify(contactos));
           if(avisos!==null)localStorage.setItem(KEYS.avisos,avisos);
           estadoCopia("✓ Restauración completada. Recargando la agenda…");
           setTimeout(function(){location.reload()},700);
@@ -3053,98 +3056,64 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
 (function(){
  const input=document.getElementById('contactoFotoOCR'); if(!input)return;
  const status=document.getElementById('contactoOCREstado');
- let fotoContacto="";
+ let job=0;
+ const clean=s=>String(s||'').replace(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/,'').replace(/[^\wÁÉÍÓÚÜÑáéíóúüñ&'.,/# -]/g,' ').replace(/\s+/g,' ').trim();
  input.addEventListener('change',async()=>{
    const file=input.files&&input.files[0]; if(!file)return;
+   const thisJob=++job;
    status.textContent='Preparando fotografía…';
+   let objectUrl='';
    try{
-     const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=URL.createObjectURL(file)});
-     // Reduce stored photo size so local browser storage is less likely to run out.
-     const scale=Math.min(1,600/Math.max(img.naturalWidth,img.naturalHeight));
-     const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
-     const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
-     URL.revokeObjectURL(img.src);fotoContacto=canvas.toDataURL('image/jpeg',0.42);
+     objectUrl=URL.createObjectURL(file);
+     const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('No se pudo abrir la fotografía.'));im.src=objectUrl});
+     if(thisJob!==job)return;
+     // Keep sufficient resolution for small print; never store the source image.
+     const scale=Math.min(1,2600/Math.max(img.naturalWidth,img.naturalHeight));
+     const canvas=document.createElement('canvas');
+     canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+     const ctx=canvas.getContext('2d');
+     if(!ctx)throw new Error('No se pudo preparar la fotografía.');
+     ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+     ctx.drawImage(img,0,0,canvas.width,canvas.height);
+     URL.revokeObjectURL(objectUrl);objectUrl='';
      if(!window.Tesseract)throw new Error('No se pudo cargar el OCR. Comprueba la conexión.');
-     status.textContent='Leyendo texto…';
-     const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{if(m.status==='recognizing text')status.textContent='Leyendo… '+Math.round((m.progress||0)*100)+'%';}});
-     const raw=(result.data.text||'').replace(/\r/g,'');const lines=raw.split('\n').map(s=>s.trim().replace(/[|]+/g,' ').replace(/\s{2,}/g,' ')).filter(Boolean);
-     const email=(raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]||'';
-     const phoneMatches=raw.match(/(?:\+?\d[\d .()/-]{7,}\d)/g)||[];
-     const phone=phoneMatches.map(s=>s.trim()).filter(s=>{const n=s.replace(/\D/g,'');return n.length>=9&&n.length<=15}).sort((x,y)=>y.replace(/\D/g,'').length-x.replace(/\D/g,'').length)[0]||'';
-     const nameEl=document.getElementById('contactoArchivoNombre'),emailEl=document.getElementById('contactoArchivoEmail'),phoneEl=document.getElementById('contactoArchivoTelefono'),addrEl=document.getElementById('contactoArchivoDireccion');
-     const clean=s=>s.replace(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/,'').replace(/[^\wÁÉÍÓÚÜÑáéíóúüñ&'., -]/g,' ').replace(/\s+/g,' ').trim();
-     const junk=/\b(tel|telefono|teléfono|da:|indicaciones|cerrado|abierto|horario|mañana|más horas|http|www|facebook|instagram)\b/i;
-     const addrPattern=/\b(calle|avenida|avda|av\.|plaza|paseo|carretera|camino|callejón|c\/|pza|pol[ií]gono|urbanización|urb\.|número|nº)\b|\b\d{5}\b/i;
-     if(email&&!emailEl.value)emailEl.value=email;
+     status.textContent='Leyendo tarjeta…';
+     const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{
+       if(thisJob===job&&m.status==='recognizing text')status.textContent='Leyendo… '+Math.round((m.progress||0)*100)+'%';
+     }});
+     if(thisJob!==job)return;
+     const raw=(result.data.text||'').replace(/\r/g,'');
+     const lines=raw.split('\n').map(x=>clean(x)).filter(Boolean);
+     const nameEl=document.getElementById('contactoArchivoNombre');
+     const phoneEl=document.getElementById('contactoArchivoTelefono');
+     const addrEl=document.getElementById('contactoArchivoDireccion');
+     const junk=/\b(tel(?:éfono)?|fax|horario|abierto|cerrado|indicaciones|www|https?|facebook|instagram|email|e-mail|contacto)\b/i;
+     const addressPattern=/\b(calle|c\/|avenida|avda?\.?|plaza|pza\.?|paseo|carretera|camino|callejón|pol[ií]gono|urbanizaci[oó]n|urb\.?|r[uú]a|n[uú]mero|nº|portal|local|piso)\b|\b\d{5}\b/i;
+     const phones=(raw.match(/(?:\+?\d[\d\s()./-]{6,}\d)/g)||[])
+       .map(x=>x.trim()).filter(x=>{const n=x.replace(/\D/g,'');return n.length>=9&&n.length<=15&&!/^\d{5}$/.test(n)})
+       .sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length);
+     const phone=phones[0]||'';
      if(phone&&!phoneEl.value)phoneEl.value=phone;
-     const address=lines.find(s=>addrPattern.test(s)&&!junk.test(s)&&s.replace(/\D/g,'').length>=1);
-     if(address&&!addrEl.value)addrEl.value=clean(address).slice(0,180);
-     // Usually business name is one of the first readable lines; reject OCR garbage and label text.
-     const firstLines=lines.slice(0,7);
-     const name=firstLines.map(clean).find(s=>s.length>=4&&s.length<=70&&!junk.test(s)&&!addrPattern.test(s)&&!email&&
-       !/^\d[\d .()/-]*$/.test(s)&&(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3}/.test(s))&&
-       (s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length>=Math.max(4,(s.match(/\d/g)||[]).length*2));
+     const address=lines.find(x=>addressPattern.test(x)&&!junk.test(x)&&/\d/.test(x));
+     if(address&&!addrEl.value)addrEl.value=address.slice(0,180);
+     // Name candidate: a readable early line, not a phone/address or common advertising label.
+     const name=lines.slice(0,8).find(x=>{
+       const letters=(x.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
+       const digits=(x.match(/\d/g)||[]).length;
+       return x.length>=3&&x.length<=75&&letters>=3&&letters>=digits*2&&!junk.test(x)&&!addressPattern.test(x)&&!/(?:\+?\d[\d\s()./-]{6,}\d)/.test(x);
+     });
      if(name&&!nameEl.value)nameEl.value=name;
-     status.textContent='Lectura terminada. Revisa los campos y pulsa GUARDAR. La imagen se conserva en el contacto.';
-   }catch(e){status.textContent=e.message||'No se pudo leer la fotografía.';}
+     const found=[name,phone,address].filter(Boolean).length;
+     status.textContent=found?'Datos reconocidos. Revisa Nombre, Dirección y Teléfono y pulsa GUARDAR.':'No he podido reconocer esos datos con seguridad. Puedes introducirlos manualmente.';
+   }catch(e){
+     if(thisJob===job)status.textContent=e.message||'No se pudo leer la fotografía.';
+   }finally{
+     if(objectUrl)URL.revokeObjectURL(objectUrl);
+   }
  });
- window.miAgendaFotoContacto=()=>fotoContacto;
 })();
 </script>
 
-<style>
-#lectorImagenGeneral{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:12px}
-#lectorImagenGeneral .ligPanel{width:min(760px,100%);max-height:92vh;overflow:auto;background:var(--card,#fff);color:var(--txt,#222);border:1px solid var(--bor,#ccc);border-radius:14px;padding:16px;box-shadow:0 12px 44px #0005}
-#lectorImagenGeneral textarea{width:100%;min-height:180px;resize:vertical;box-sizing:border-box}
-#lectorImagenGeneral .ligGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
-#lectorImagenGeneral .ligItem{padding:9px;border:1px solid var(--bor,#ccc);border-radius:8px;overflow-wrap:anywhere}
-</style>
-<div id="lectorImagenGeneral" role="dialog" aria-modal="true" aria-labelledby="ligTitulo">
- <div class="ligPanel">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 id="ligTitulo" style="margin:0">🖼️ Leer imagen</h3><button type="button" class="btn out" id="ligCerrar">✕ CERRAR</button></div>
-  <p class="sub">Sirve para fotos, capturas, facturas, anuncios y tarjetas. La imagen se procesa en el navegador y no se conserva.</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><label for="ligArchivo" class="btn" style="cursor:pointer">📷 ELEGIR IMAGEN</label><input id="ligArchivo" type="file" accept="image/*" style="display:none"><span id="ligEstado" class="sub" role="status" aria-live="polite"></span></div>
-  <div id="ligResumen" class="ligGrid" style="margin:8px 0"></div>
-  <label for="ligTexto"><b>Texto reconocido (puedes corregirlo)</b></label>
-  <textarea id="ligTexto" placeholder="El texto leído aparecerá aquí…"></textarea>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px"><button class="btn" id="ligReanalizar">🔎 ANALIZAR TEXTO</button><button class="btn out" id="ligCopiar">📋 COPIAR TEXTO</button><button class="btn out" id="ligDescargar">⬇️ GUARDAR COMO TXT</button><button class="btn" id="ligGuardarArchivo">💾 GUARDAR EN ARCHIVO</button></div><div id="ligGuardadoEstado" class="sub" role="status" aria-live="polite" style="margin-top:8px"></div>
-  <p class="sub" style="margin-bottom:0">El reconocimiento automático puede equivocarse, especialmente con letras pequeñas, reflejos o imágenes borrosas. Comprueba los datos antes de utilizarlos.</p>
- </div>
-</div>
-<script>
-(function(){
- const modal=document.getElementById('lectorImagenGeneral'), open=document.getElementById('leerImagenGeneralBtn'), close=document.getElementById('ligCerrar'), file=document.getElementById('ligArchivo'), status=document.getElementById('ligEstado'), text=document.getElementById('ligTexto'), summary=document.getElementById('ligResumen');
- if(!modal||!open)return;
- function show(){modal.style.display='flex'} function hide(){modal.style.display='none'}
- open.addEventListener('click',show);close.addEventListener('click',hide);modal.addEventListener('click',e=>{if(e.target===modal)hide()});
- function analyze(){const raw=text.value||'';const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);const email=[...new Set(raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[])];const phones=[...new Set((raw.match(/(?:\+?\d[\d .()\/-]{7,}\d)/g)||[]).map(x=>x.trim()).filter(x=>{let n=x.replace(/\D/g,'').length;return n>=9&&n<=15}))];const dates=[...new Set(raw.match(/\b(?:\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2})\b/g)||[])];const prices=[...new Set(raw.match(/(?:\d{1,3}(?:[. ]\d{3})*(?:,\d{2})?\s?(?:€|EUR)|(?:€|EUR)\s?\d[\d.,]*)/gi)||[])];const inv=[...new Set(lines.filter(x=>/\b(factura|invoice|n[úu]m(?:ero)?\s*(?:factura|fac)?|n[º°])\b/i.test(x)).slice(0,4))];const blocks=[['Correos',email],['Teléfonos',phones],['Fechas',dates],['Precios / importes',prices],['Posibles datos de factura',inv]];summary.innerHTML=blocks.map(([label,arr])=>'<div class="ligItem"><b>'+label+'</b><div>'+(arr.length?arr.map(x=>esc(x)).join('<br>'):'—')+'</div></div>').join('');}
- function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
- document.getElementById('ligReanalizar').addEventListener('click',analyze);
- // Save the reviewed OCR text inside Mi Agenda's existing custom Archive folders.
- document.getElementById('ligGuardarArchivo').addEventListener('click',()=>{
-  const raw=(text.value||'').trim();
-  const savedStatus=document.getElementById('ligGuardadoEstado');
-  if(!raw){savedStatus.textContent='No hay texto para guardar. Primero lee una imagen.';return;}
-  try{
-   const key='mi_agenda_archivo_estructura_v1';
-   let structure=JSON.parse(localStorage.getItem(key)||'{"carpetas":[]}');
-   if(!structure||!Array.isArray(structure.carpetas))throw new Error('La estructura de carpetas de ARCHIVO no es válida.');
-   let folder=structure.carpetas.find(c=>String(c.nombre||'').toLocaleLowerCase('es')==='lecturas de imagen');
-   if(!folder){folder={id:'ocr_'+Date.now(),nombre:'Lecturas de imagen',apartados:[]};structure.carpetas.push(folder);}
-   if(!Array.isArray(folder.apartados))folder.apartados=[];
-   const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
-   const stamp=new Date().toLocaleString('es-ES');
-   folder.apartados.push({id:'ocr_doc_'+Date.now(),titulo:'Lectura '+stamp,children:lines.map((line,i)=>({id:'ocr_line_'+Date.now()+'_'+i,titulo:line,children:[]}))});
-   const serialized=JSON.stringify(structure);
-   localStorage.setItem(key,serialized);
-   savedStatus.textContent='✓ Texto guardado en ARCHIVO → Lecturas de imagen. Se incluirá en la copia de seguridad de Mi Agenda.';
-  }catch(err){savedStatus.textContent='No se pudo guardar: '+(err&&err.message?err.message:'error de almacenamiento')+'. Comprueba el espacio disponible.';}
- });
- file.addEventListener('change',async()=>{const f=file.files&&file.files[0];if(!f)return;status.textContent='Preparando imagen…';text.value='';summary.innerHTML='';try{if(!window.Tesseract)throw Error('No se ha podido cargar el motor de lectura. Comprueba la conexión a internet y vuelve a intentarlo.');const url=URL.createObjectURL(f);const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=url});const scale=Math.min(1,2200/Math.max(img.naturalWidth,img.naturalHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);status.textContent='Leyendo texto…';const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{if(m.status==='recognizing text')status.textContent='Reconociendo… '+Math.round((m.progress||0)*100)+'%'}});text.value=(result.data.text||'').trim();analyze();status.textContent=text.value?'Lectura terminada. Revisa y corrige el texto.':'No se ha detectado texto legible.';}catch(e){status.textContent=e.message||'No se pudo leer la imagen.'}});
- document.getElementById('ligCopiar').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(text.value);status.textContent='Texto copiado.'}catch(e){text.focus();text.select();status.textContent='Selecciona el texto y cópialo manualmente.'}});
- document.getElementById('ligDescargar').addEventListener('click',()=>{const blob=new Blob([text.value],{type:'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='texto_reconocido.txt';a.click();URL.revokeObjectURL(a.href);status.textContent='Archivo de texto preparado.'});
-})();
-</script>
 
 </body>
 </html>
