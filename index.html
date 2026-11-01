@@ -678,6 +678,7 @@ label{line-height:1.35}
   <h2>📁 ARCHIVO</h2>
 
   <div class="archivoTopBtns" id="archivoInicio" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+    <button class="btn" id="leerImagenGeneralBtn" type="button">🖼️ LEER IMAGEN</button>
     <button class="btn" id="contactosArchivoBtn" type="button">👥 CONTACTOS</button>
     <button class="btn" id="carpetasArchivoBtn" type="button">📁 CARPETAS</button>
   </div>
@@ -3090,5 +3091,60 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
  window.miAgendaFotoContacto=()=>fotoContacto;
 })();
 </script>
+
+<style>
+#lectorImagenGeneral{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:12px}
+#lectorImagenGeneral .ligPanel{width:min(760px,100%);max-height:92vh;overflow:auto;background:var(--card,#fff);color:var(--txt,#222);border:1px solid var(--bor,#ccc);border-radius:14px;padding:16px;box-shadow:0 12px 44px #0005}
+#lectorImagenGeneral textarea{width:100%;min-height:180px;resize:vertical;box-sizing:border-box}
+#lectorImagenGeneral .ligGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+#lectorImagenGeneral .ligItem{padding:9px;border:1px solid var(--bor,#ccc);border-radius:8px;overflow-wrap:anywhere}
+</style>
+<div id="lectorImagenGeneral" role="dialog" aria-modal="true" aria-labelledby="ligTitulo">
+ <div class="ligPanel">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 id="ligTitulo" style="margin:0">🖼️ Leer imagen</h3><button type="button" class="btn out" id="ligCerrar">✕ CERRAR</button></div>
+  <p class="sub">Sirve para fotos, capturas, facturas, anuncios y tarjetas. La imagen se procesa en el navegador y no se conserva.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><label for="ligArchivo" class="btn" style="cursor:pointer">📷 ELEGIR IMAGEN</label><input id="ligArchivo" type="file" accept="image/*" style="display:none"><span id="ligEstado" class="sub" role="status" aria-live="polite"></span></div>
+  <div id="ligResumen" class="ligGrid" style="margin:8px 0"></div>
+  <label for="ligTexto"><b>Texto reconocido (puedes corregirlo)</b></label>
+  <textarea id="ligTexto" placeholder="El texto leído aparecerá aquí…"></textarea>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px"><button class="btn" id="ligReanalizar">🔎 ANALIZAR TEXTO</button><button class="btn out" id="ligCopiar">📋 COPIAR TEXTO</button><button class="btn out" id="ligDescargar">⬇️ GUARDAR COMO TXT</button><button class="btn" id="ligGuardarArchivo">💾 GUARDAR EN ARCHIVO</button></div><div id="ligGuardadoEstado" class="sub" role="status" aria-live="polite" style="margin-top:8px"></div>
+  <p class="sub" style="margin-bottom:0">El reconocimiento automático puede equivocarse, especialmente con letras pequeñas, reflejos o imágenes borrosas. Comprueba los datos antes de utilizarlos.</p>
+ </div>
+</div>
+<script>
+(function(){
+ const modal=document.getElementById('lectorImagenGeneral'), open=document.getElementById('leerImagenGeneralBtn'), close=document.getElementById('ligCerrar'), file=document.getElementById('ligArchivo'), status=document.getElementById('ligEstado'), text=document.getElementById('ligTexto'), summary=document.getElementById('ligResumen');
+ if(!modal||!open)return;
+ function show(){modal.style.display='flex'} function hide(){modal.style.display='none'}
+ open.addEventListener('click',show);close.addEventListener('click',hide);modal.addEventListener('click',e=>{if(e.target===modal)hide()});
+ function analyze(){const raw=text.value||'';const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);const email=[...new Set(raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[])];const phones=[...new Set((raw.match(/(?:\+?\d[\d .()\/-]{7,}\d)/g)||[]).map(x=>x.trim()).filter(x=>{let n=x.replace(/\D/g,'').length;return n>=9&&n<=15}))];const dates=[...new Set(raw.match(/\b(?:\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2})\b/g)||[])];const prices=[...new Set(raw.match(/(?:\d{1,3}(?:[. ]\d{3})*(?:,\d{2})?\s?(?:€|EUR)|(?:€|EUR)\s?\d[\d.,]*)/gi)||[])];const inv=[...new Set(lines.filter(x=>/\b(factura|invoice|n[úu]m(?:ero)?\s*(?:factura|fac)?|n[º°])\b/i.test(x)).slice(0,4))];const blocks=[['Correos',email],['Teléfonos',phones],['Fechas',dates],['Precios / importes',prices],['Posibles datos de factura',inv]];summary.innerHTML=blocks.map(([label,arr])=>'<div class="ligItem"><b>'+label+'</b><div>'+(arr.length?arr.map(x=>esc(x)).join('<br>'):'—')+'</div></div>').join('');}
+ function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ document.getElementById('ligReanalizar').addEventListener('click',analyze);
+ // Save the reviewed OCR text inside Mi Agenda's existing custom Archive folders.
+ document.getElementById('ligGuardarArchivo').addEventListener('click',()=>{
+  const raw=(text.value||'').trim();
+  const savedStatus=document.getElementById('ligGuardadoEstado');
+  if(!raw){savedStatus.textContent='No hay texto para guardar. Primero lee una imagen.';return;}
+  try{
+   const key='mi_agenda_archivo_estructura_v1';
+   let structure=JSON.parse(localStorage.getItem(key)||'{"carpetas":[]}');
+   if(!structure||!Array.isArray(structure.carpetas))throw new Error('La estructura de carpetas de ARCHIVO no es válida.');
+   let folder=structure.carpetas.find(c=>String(c.nombre||'').toLocaleLowerCase('es')==='lecturas de imagen');
+   if(!folder){folder={id:'ocr_'+Date.now(),nombre:'Lecturas de imagen',apartados:[]};structure.carpetas.push(folder);}
+   if(!Array.isArray(folder.apartados))folder.apartados=[];
+   const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+   const stamp=new Date().toLocaleString('es-ES');
+   folder.apartados.push({id:'ocr_doc_'+Date.now(),titulo:'Lectura '+stamp,children:lines.map((line,i)=>({id:'ocr_line_'+Date.now()+'_'+i,titulo:line,children:[]}))});
+   const serialized=JSON.stringify(structure);
+   localStorage.setItem(key,serialized);
+   savedStatus.textContent='✓ Texto guardado en ARCHIVO → Lecturas de imagen. Se incluirá en la copia de seguridad de Mi Agenda.';
+  }catch(err){savedStatus.textContent='No se pudo guardar: '+(err&&err.message?err.message:'error de almacenamiento')+'. Comprueba el espacio disponible.';}
+ });
+ file.addEventListener('change',async()=>{const f=file.files&&file.files[0];if(!f)return;status.textContent='Preparando imagen…';text.value='';summary.innerHTML='';try{if(!window.Tesseract)throw Error('No se ha podido cargar el motor de lectura. Comprueba la conexión a internet y vuelve a intentarlo.');const url=URL.createObjectURL(f);const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=url});const scale=Math.min(1,2200/Math.max(img.naturalWidth,img.naturalHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);status.textContent='Leyendo texto…';const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{if(m.status==='recognizing text')status.textContent='Reconociendo… '+Math.round((m.progress||0)*100)+'%'}});text.value=(result.data.text||'').trim();analyze();status.textContent=text.value?'Lectura terminada. Revisa y corrige el texto.':'No se ha detectado texto legible.';}catch(e){status.textContent=e.message||'No se pudo leer la imagen.'}});
+ document.getElementById('ligCopiar').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(text.value);status.textContent='Texto copiado.'}catch(e){text.focus();text.select();status.textContent='Selecciona el texto y cópialo manualmente.'}});
+ document.getElementById('ligDescargar').addEventListener('click',()=>{const blob=new Blob([text.value],{type:'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='texto_reconocido.txt';a.click();URL.revokeObjectURL(a.href);status.textContent='Archivo de texto preparado.'});
+})();
+</script>
+
 </body>
 </html>
