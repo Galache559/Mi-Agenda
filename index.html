@@ -3050,35 +3050,43 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 (function(){
+<script>
  const input=document.getElementById('contactoFotoOCR'); if(!input)return;
  const status=document.getElementById('contactoOCREstado');
  let fotoContacto="";
  input.addEventListener('change',async()=>{
    const file=input.files&&input.files[0]; if(!file)return;
-   status.textContent='Preparando imagen…';
+   status.textContent='Preparando fotografía…';
    try{
-     fotoContacto=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)});
      const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=URL.createObjectURL(file)});
-     const scale=Math.min(2,Math.max(1,1800/Math.max(img.naturalWidth,img.naturalHeight)));
-     const canvas=document.createElement('canvas');canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);
-     canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(img.src);
+     // Reduce stored photo size so local browser storage is less likely to run out.
+     const scale=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight));
+     const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+     const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+     URL.revokeObjectURL(img.src);fotoContacto=canvas.toDataURL('image/jpeg',0.72);
      if(!window.Tesseract)throw new Error('No se pudo cargar el OCR. Comprueba la conexión.');
      status.textContent='Leyendo texto…';
      const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{if(m.status==='recognizing text')status.textContent='Leyendo… '+Math.round((m.progress||0)*100)+'%';}});
-     const raw=(result.data.text||'').replace(/\r/g,''); const lines=raw.split('\n').map(s=>s.trim()).filter(Boolean);
+     const raw=(result.data.text||'').replace(/\r/g,'');const lines=raw.split('\n').map(s=>s.trim().replace(/[|]+/g,' ').replace(/\s{2,}/g,' ')).filter(Boolean);
      const email=(raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]||'';
-     const phones=(raw.match(/(?:\+?\d[\d .()/-]{7,}\d)/g)||[]).map(s=>s.trim()).filter(s=>s.replace(/\D/g,'').length>=9);
-     const phone=phones.sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length)[0]||'';
-     const excluded=/^(https?:|www\.|tel:|cerrado|abierto|abre|horario|indicaciones|más horas)/i;
-     const candidates=lines.filter(s=>!excluded.test(s)&&s!==email&&!s.includes(phone));
+     const phoneMatches=raw.match(/(?:\+?\d[\d .()/-]{7,}\d)/g)||[];
+     const phone=phoneMatches.map(s=>s.trim()).filter(s=>{const n=s.replace(/\D/g,'');return n.length>=9&&n.length<=15}).sort((x,y)=>y.replace(/\D/g,'').length-x.replace(/\D/g,'').length)[0]||'';
      const nameEl=document.getElementById('contactoArchivoNombre'),emailEl=document.getElementById('contactoArchivoEmail'),phoneEl=document.getElementById('contactoArchivoTelefono'),addrEl=document.getElementById('contactoArchivoDireccion');
-     if(email)emailEl.value=email;if(phone)phoneEl.value=phone;
-     const addressLine=candidates.find(s=>/(calle|avenida|avda|av\.|plaza|paseo|carretera|camino|c\/|pza|pol[ií]gono|\b\d{5}\b)/i.test(s));
-     if(addressLine&&!addrEl.value)addrEl.value=addressLine.replace(/^[📍•\s]+/,'').slice(0,180);
-     const nameCandidate=candidates.find(s=>s!==addressLine&&!/\b\d{5}\b/.test(s)&&s.length>2);
-     if(nameCandidate&&!nameEl.value)nameEl.value=nameCandidate.slice(0,100);
-     status.textContent='Lectura terminada. Revisa los campos y guarda; la foto quedará asociada al contacto.';
-   }catch(e){status.textContent=e.message||'No se pudo leer la imagen.';}
+     const clean=s=>s.replace(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/,'').replace(/[^\wÁÉÍÓÚÜÑáéíóúüñ&'., -]/g,' ').replace(/\s+/g,' ').trim();
+     const junk=/\b(tel|telefono|teléfono|da:|indicaciones|cerrado|abierto|horario|mañana|más horas|http|www|facebook|instagram)\b/i;
+     const addrPattern=/\b(calle|avenida|avda|av\.|plaza|paseo|carretera|camino|callejón|c\/|pza|pol[ií]gono|urbanización|urb\.|número|nº)\b|\b\d{5}\b/i;
+     if(email&&!emailEl.value)emailEl.value=email;
+     if(phone&&!phoneEl.value)phoneEl.value=phone;
+     const address=lines.find(s=>addrPattern.test(s)&&!junk.test(s)&&s.replace(/\D/g,'').length>=1);
+     if(address&&!addrEl.value)addrEl.value=clean(address).slice(0,180);
+     // Usually business name is one of the first readable lines; reject OCR garbage and label text.
+     const firstLines=lines.slice(0,7);
+     const name=firstLines.map(clean).find(s=>s.length>=4&&s.length<=70&&!junk.test(s)&&!addrPattern.test(s)&&!email&&
+       !/^\d[\d .()/-]*$/.test(s)&&(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3}/.test(s))&&
+       (s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length>=Math.max(4,(s.match(/\d/g)||[]).length*2));
+     if(name&&!nameEl.value)nameEl.value=name;
+     status.textContent='Lectura terminada. Revisa los campos y pulsa GUARDAR. La imagen se conserva en el contacto.';
+   }catch(e){status.textContent=e.message||'No se pudo leer la fotografía.';}
  });
  window.miAgendaFotoContacto=()=>fotoContacto;
 })();
