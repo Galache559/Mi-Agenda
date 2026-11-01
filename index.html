@@ -3056,7 +3056,21 @@ window.nuevaCarpetaArchivo=function(){const name=namePrompt('Nombre de la nueva 
    status.textContent='Leyendo la fotografía…';
    try{
      if(!window.Tesseract)throw new Error('No se pudo cargar el lector OCR. Comprueba la conexión a Internet.');
-     const result=await Tesseract.recognize(file,'spa+eng');
+     // Preparar la imagen: ampliar, pasar a gris y aumentar contraste antes del OCR.
+     const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=URL.createObjectURL(file)});
+     const scale=Math.min(3,Math.max(1.5,2400/Math.max(img.naturalWidth,img.naturalHeight)));
+     const canvas=document.createElement('canvas');canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);
+     const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,canvas.width,canvas.height);
+     URL.revokeObjectURL(img.src);
+     const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);const d=pixels.data;
+     // Contraste local sencillo, preservando las letras y reduciendo el fondo de color.
+     for(let i=0;i<d.length;i+=4){let g=.299*d[i]+.587*d[i+1]+.114*d[i+2];g=(g-128)*1.45+128;g=Math.max(0,Math.min(255,g));d[i]=d[i+1]=d[i+2]=g;}
+     ctx.putImageData(pixels,0,0);
+     // Las tarjetas suelen tener texto disperso: probar dos segmentaciones y elegir la de mayor confianza.
+     const opts={logger:m=>{if(m.status==='recognizing text')status.textContent='Afinando lectura… '+Math.round((m.progress||0)*100)+'%';}};
+     const r6=await Tesseract.recognize(canvas,'spa+eng',{...opts,tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
+     const r11=await Tesseract.recognize(canvas,'spa+eng',{...opts,tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'});
+     const result=(r11.data.confidence||0)>(r6.data.confidence||0)?r11:r6;
      const raw=(result.data.text||'').replace(/\r/g,'');
      const lines=raw.split('\n').map(x=>x.trim()).filter(Boolean);
      const email=(raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]||'';
